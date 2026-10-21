@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ANOMALY UX — ห้องตรวจการณ์ความผิดปกติ UX/UI</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#07090d;color:#e5e7eb;font-family:'Prompt',sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);z-index:999}
+.screen{display:none;max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+.screen.active{display:block;animation:fade .4s}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+h1.glitch{font-size:clamp(34px,6vw,66px);font-weight:800;letter-spacing:5px;margin:10px 0 4px;text-align:center;color:#fff;text-shadow:2px 0 #ef4444,-2px 0 #22d3ee;animation:gl 3s infinite}
+@keyframes gl{0%,90%,100%{transform:none}92%{transform:translate(3px,-1px) skewX(10deg)}94%{transform:translate(-3px,1px)}96%{transform:skewX(-8deg)}}
+.sub{text-align:center;color:#9ca3af;margin-bottom:24px}
+.howto{background:#111827;border:1px solid #1f2937;border-radius:14px;padding:16px 22px;margin-bottom:22px;line-height:1.9;font-size:15px}
+.howto b{color:#fbbf24}
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.lv{background:linear-gradient(160deg,#111827,#0b1220);border:1px solid #1f2937;border-radius:16px;padding:18px;cursor:pointer;transition:.2s}
+.lv:hover{transform:translateY(-4px);border-color:var(--c);box-shadow:0 0 26px -6px var(--c)}
+.lv .no{font-size:13px;color:var(--c);font-weight:600;letter-spacing:2px}
+.lv h3{margin:6px 0 8px;font-size:19px}
+.lv p{margin:0;color:#9ca3af;font-size:14px;line-height:1.6}
+.lv .tag{display:inline-block;margin-top:10px;font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--c);color:var(--c)}
+.g-btn{font-family:inherit;font-size:15px;padding:11px 20px;border-radius:10px;border:1px solid transparent;cursor:pointer;background:#f59e0b;color:#111;font-weight:600;transition:.15s}
+.g-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.g-btn.ghost{background:transparent;color:#e5e7eb;border-color:#374151}
+.g-btn.ok{background:#10b981;color:#04130d}
+.g-btn.warn{background:#ef4444;color:#fff}
+.g-btn.sm{padding:6px 12px;font-size:13px}
+.center{text-align:center}.muted{color:#9ca3af}
+.hud{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.hud .lvname{font-weight:600;font-size:17px}
+.pill{background:#111827;border:1px solid #1f2937;padding:6px 12px;border-radius:99px;font-size:14px}
+.browser{border-radius:12px;overflow:hidden;border:1px solid #1f2937;box-shadow:0 20px 50px -20px #000;background:#fff}
+.bbar{background:#1f2937;padding:8px 12px;display:flex;gap:10px;align-items:center}
+.dots span{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px}
+.url{flex:1;background:#111827;color:#9ca3af;padding:5px 12px;border-radius:8px;font-size:13px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#viewport{max-height:66vh;overflow:auto;position:relative}
+.controls{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.controls .g-btn{min-width:230px;padding:14px 22px;font-size:16px}
+.flick{animation:flick .7s}
+@keyframes flick{0%{filter:brightness(0)}30%{filter:brightness(1.5)}45%{filter:brightness(.3)}65%{filter:none}}
+#roomIntro{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:44px;font-weight:800;letter-spacing:6px;z-index:500;opacity:0;pointer-events:none;transition:opacity .35s}
+#roomIntro small{font-size:15px;letter-spacing:2px;color:#9ca3af;font-weight:400}
+#roomIntro.show{opacity:1}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:flex-start;justify-content:center;z-index:600;overflow:auto;padding:30px 12px}
+#modal.open{display:flex}
+#modalBox{background:#0f172a;border:1px solid #334155;border-radius:16px;max-width:920px;width:100%;padding:22px;animation:pop .25s}
+@keyframes pop{from{transform:scale(.95);opacity:0}}
+#modalBox h2{margin-top:0}
+.buckets{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.bucket{border:2px dashed var(--c);border-radius:16px;padding:16px 10px;text-align:center;cursor:pointer;transition:.2s;opacity:.85}
+.bucket:hover{transform:translateY(-3px);opacity:1}
+.bucket.sel{border-style:solid;opacity:1;box-shadow:0 0 22px -6px var(--c)}
+.bucket.sel .bk-icon{transform:rotate(-40deg) translateX(-6px)}
+.bk-icon{font-size:46px;transition:.35s}
+.bk-name{font-weight:600;color:var(--c);margin-top:4px;font-size:15px}
+.bk-count{font-size:12px;color:#9ca3af}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.chip{font-family:inherit;text-align:left;background:#111827;border:1px solid var(--c);color:#e5e7eb;border-radius:12px;padding:10px 12px;cursor:pointer;animation:drop .4s backwards;transition:.15s;font-size:14px}
+.chip:hover{background:#1e293b;transform:translateY(-2px)}
+.chip b{color:var(--c);margin-right:4px}
+.chip small{display:block;color:#9ca3af;font-size:12px}
+.chip em{display:block;font-style:normal;font-size:12px;color:#cbd5e1;margin-top:4px;line-height:1.5}
+@keyframes drop{from{opacity:0;transform:translateY(-40px) rotate(-6deg)}}
+.rtag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;border:1px solid var(--c);color:var(--c);margin:2px}
+.res{text-align:center}.res-ic{font-size:56px;line-height:1}
+.res.ok .res-ic{color:#10b981}.res.bad .res-ic{color:#ef4444}
+.why{text-align:left;background:#111827;border-left:4px solid #f59e0b;padding:12px 14px;border-radius:8px;margin:14px 0;line-height:1.75}
+.sumcard{background:#111827;border:1px solid #1f2937;border-radius:16px;padding:22px;margin-top:10px}
+.bigscore{font-size:52px;font-weight:800;color:#fbbf24;text-align:center}
+.misslist .why{border-left-color:#ef4444}
+.hb-group{margin-bottom:18px}
+.hb-item{padding:8px 0;border-bottom:1px solid #1f2937;font-size:14px;line-height:1.6}
+.hb-item b{color:var(--c)}
+@media(max-width:640px){.buckets{grid-template-columns:1fr}.controls .g-btn{min-width:100%}}
+
+/* ===== mini website ===== */
+.site{background:#fff;color:#1f2937;font-family:'Sarabun',sans-serif;font-size:15px;min-height:460px;position:relative}
+.site h2{margin:0 0 12px;font-size:22px}.site h3{margin:14px 0 8px;font-size:17px}
+.s-nav{display:flex;gap:18px;align-items:center;padding:12px 20px;background:#1e3a8a;color:#fff;flex-wrap:wrap}
+.s-nav span{cursor:pointer}.s-nav .sp{flex:1}
+.s-body{padding:20px}
+.s-btn{background:#2563eb;color:#fff;border:0;padding:10px 18px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:15px}
+.s-btn.ghost{background:#e5e7eb;color:#111}.s-btn.green{background:#16a34a}.s-btn.red{background:#dc2626}
+.s-btn:disabled{opacity:.6}
+.s-field{display:block;margin:10px 0;font-weight:600;font-size:14px}
+.s-field input,.s-field select,.s-field textarea{display:block;width:100%;max-width:400px;margin-top:4px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:15px;font-weight:400}
+.s-card{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff}
+.s-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.s-alert{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:14px}
+.s-table{border-collapse:collapse;width:100%;font-size:14px}
+.s-table td,.s-table th{border-bottom:1px solid #e5e7eb;padding:8px;text-align:left}
+.s-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.s-muted{color:#6b7280;font-size:13px}
+.s-err{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;margin-top:8px}
+.s-ok{color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;margin-top:8px}
+.s-emoji{font-size:44px;text-align:center}
+.s-badge{background:#ef4444;color:#fff;border-radius:99px;padding:1px 8px;font-size:12px;margin-left:4px}
+.tab{padding:8px 16px;border:1px solid #cbd5e1;border-radius:8px 8px 0 0;cursor:pointer;background:#f1f5f9}
+.tab.on{background:#fff;border-bottom-color:#fff;font-weight:700}
+.tg{width:48px;height:26px;border-radius:13px;background:#cbd5e1;position:relative;cursor:pointer;display:inline-block;vertical-align:middle;transition:.2s}
+.tg.on{background:#16a34a}
+.tg::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.tg.on::after{left:25px}
+.tg-bad{width:48px;height:26px;border-radius:13px;background:#d1d5db;position:relative;cursor:pointer;display:inline-block;vertical-align:middle}
+.tg-bad::after{content:'';position:absolute;top:3px;left:14px;width:20px;height:20px;border-radius:50%;background:#9ca3af}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e5e7eb;max-width:520px}
+.blink{animation:blink .5s infinite}
+@keyframes blink{50%{opacity:.15}}
+.s-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 18px;border-radius:10px;font-family:'Sarabun',sans-serif;z-index:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;gap:12px;align-items:center;animation:pop .2s}
+.s-toast button{background:none;border:0;color:#fbbf24;font-weight:700;cursor:pointer;font-family:inherit}
+.drop{border:3px dashed #94a3b8;border-radius:12px;padding:20px;text-align:center;min-height:90px}
+.drag{cursor:grab;user-select:none}
+.mq-wrap{overflow:hidden;white-space:nowrap}
+.mq{display:inline-block;animation:mq 9s linear infinite;padding-left:100%}
+@keyframes mq{to{transform:translateX(-100%)}}
+
+/* chaos */
+.ch{background:#fffb00;min-height:760px;position:relative;cursor:crosshair;font-family:'Sarabun',sans-serif;padding-bottom:120px}
+.ch .hs{position:relative}
+.ch .hs.found{outline:3px solid #10b981;outline-offset:2px}
+.ch .hs.reveal{outline:3px dashed #ef4444;outline-offset:2px}
+.hs-badge{position:absolute;top:-12px;right:-6px;background:#10b981;color:#fff;font:600 11px 'Prompt';padding:2px 7px;border-radius:99px;z-index:5;white-space:nowrap}
+.hs.reveal .hs-badge{background:#ef4444}
+.ch-mq{background:#ff00aa;color:#fff;font-weight:800;padding:6px 0;font-size:18px}
+.ch-nav{display:flex;gap:26px;padding:10px 16px;background:#00ff66;font-family:'Courier New',monospace;align-items:center}
+.ch-logo{margin-left:auto;font-size:11px;color:#777}
+.ch-main{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;padding:16px}
+.ch-b{background:#7c3aed;color:#fff;border:0;padding:10px 14px;border-radius:0;font-family:inherit;margin-right:2px}
+.ch-err{background:#000;color:#0f0;font-family:monospace;padding:8px;margin:8px 0;font-size:13px}
+.ch-pop{position:absolute;left:16px;bottom:16px;background:#fff;border:4px solid #ff00aa;padding:14px;width:270px;box-shadow:8px 8px 0 #000}
+@media(max-width:700px){.ch-main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<section id="menu" class="screen active">
+  <h1 class="glitch">ANOMALY UX</h1>
+  <div class="sub">ห้องตรวจการณ์ความผิดปกติ UX/UI — เว็บที่ “ผิดปกติ” กำลังซ่อนอยู่ในทุกห้อง</div>
+  <div class="howto">
+    🕯 <b>กติกา:</b> คุณคือเจ้าหน้าที่ตรวจการณ์ เดินผ่าน “ห้อง” ทีละห้อง แต่ละห้องคือหน้าเว็บ 1 หน้า<br>
+    🔍 <b>ลองคลิก กรอก หรือรอดูหน้าเว็บก่อนตัดสินใจ</b> เพราะความผิดปกติบางอย่างจะโผล่ออกมาตอนโต้ตอบเท่านั้น<br>
+    ✅ ถ้าห้องนั้นดูปกติ ให้กด <b>“ไม่พบความผิดปกติ”</b> &nbsp;|&nbsp; ⚠ ถ้าเจอจุดผิด ให้กด <b>“รายงานความผิดปกติ”</b> แล้วเลือกถังกับข้อหลักการที่ถูกละเมิด<br>
+    ❤️ มี 3 ชีวิตต่อด่าน ตอบผิดเสีย 1 ชีวิต ข้อไหนที่หลักการทับกันข้ามกลุ่ม (เช่น S5 ≈ N5) ตอบข้อไหนก็นับว่าถูก
+  </div>
+  <div class="levels" id="levelList"></div>
+  <div class="center" style="margin-top:22px"><button class="g-btn ghost" onclick="openHandbook()">📖 คู่มือหลักการทั้งหมด</button></div>
+</section>
+
+<!-- GAME -->
+<section id="game" class="screen">
+  <div class="hud">
+    <div class="lvname" id="hudLv"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="pill" id="hudRoom"></span>
+      <span class="pill" id="hudLives"></span>
+      <span class="pill" id="hudScore"></span>
+      <button class="g-btn ghost sm" onclick="openHandbook()">📖 คู่มือ</button>
+      <button class="g-btn ghost sm" onclick="goMenu()">🏠 เมนู</button>
+    </div>
+  </div>
+  <div class="browser" id="browser">
+    <div class="bbar"><div class="dots"><span style="background:#ef4444"></span><span style="background:#f59e0b"></span><span style="background:#10b981"></span></div><div class="url" id="url"></div></div>
+    <div id="viewport"></div>
+  </div>
+  <div class="controls" id="ctrlRoom">
+    <button class="g-btn ok" onclick="answer(null)">✅ ไม่พบความผิดปกติ</button>
+    <button class="g-btn warn" onclick="openReport(id=>answer(id))">⚠ รายงานความผิดปกติ</button>
+  </div>
+  <div class="controls" id="ctrlHunt" style="display:none">
+    <span class="muted" style="align-self:center">คลิกจุดที่คิดว่าผิดปกติบนหน้าเว็บ แล้วเลือกหลักการที่ถูกละเมิด</span>
+    <button class="g-btn ghost" onclick="revealHunt()">🏳 ยอมแพ้ ดูเฉลย</button>
+  </div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary" class="screen"><div id="sumBox"></div></section>
+
+<div id="roomIntro"></div>
+<div id="modal"><div id="modalBox"></div></div>
+
+<script>
+/* =================== RULES =================== */
+const RULES={
+ S:{name:"Shneiderman’s Eight Golden Rules",short:"Shneiderman (8)",color:"#f59e0b",items:[
+  {id:'S1',th:'ยึดความสม่ำเสมอ',en:'Strive for consistency',d:'คำศัพท์ สี ตำแหน่ง ปุ่ม และลำดับการทำงานเหมือนกันทั้งระบบ'},
+  {id:'S2',th:'รองรับผู้ใช้ทุกระดับ / มีทางลัด',en:'Seek universal usability / Enable shortcuts',d:'มีคีย์ลัด สั่งซ้ำ มาโคร ให้ผู้ใช้ประจำ และรองรับผู้ใช้หลากหลาย'},
+  {id:'S3',th:'ให้ผลตอบกลับที่มีความหมาย',en:'Offer informative feedback',d:'ทุกการกระทำต้องมีการตอบสนองที่เห็นได้และเข้าใจได้'},
+  {id:'S4',th:'ออกแบบให้จบงานอย่างชัดเจน',en:'Design dialogs to yield closure',d:'ลำดับงานมีต้น-กลาง-จบ และบอกชัดว่างานเสร็จแล้ว'},
+  {id:'S5',th:'ป้องกันข้อผิดพลาด',en:'Prevent errors',d:'ออกแบบไม่ให้ผู้ใช้ทำผิดตั้งแต่แรก เช่น จำกัดรูปแบบข้อมูล'},
+  {id:'S6',th:'ย้อนกลับการกระทำได้ง่าย',en:'Permit easy reversal of actions',d:'มี Undo / กู้คืน ทำให้ผู้ใช้กล้าลองโดยไม่กลัวพัง'},
+  {id:'S7',th:'ให้ผู้ใช้เป็นผู้ควบคุม',en:'Keep users in control',d:'ผู้ใช้เป็นคนเริ่มการกระทำ ระบบไม่บังคับหรือทำอะไรเองโดยไม่ได้ขอ'},
+  {id:'S8',th:'ลดภาระความจำระยะสั้น',en:'Reduce short-term memory load',d:'ไม่บังคับให้จำข้อมูลข้ามหน้า แสดงข้อมูลที่ต้องใช้ไว้ให้เห็น'}]},
+ N:{name:"Nielsen’s 10 Usability Heuristics",short:"Nielsen (10)",color:"#38bdf8",items:[
+  {id:'N1',th:'แสดงสถานะของระบบ',en:'Visibility of system status',d:'บอกผู้ใช้เสมอว่ากำลังเกิดอะไรขึ้น ภายในเวลาที่เหมาะสม'},
+  {id:'N2',th:'ตรงกับโลกจริง',en:'Match between system and the real world',d:'ใช้ภาษา ไอคอน และทิศทางที่ผู้ใช้คุ้นเคย ไม่ใช่ศัพท์ของระบบ'},
+  {id:'N3',th:'ผู้ใช้ควบคุมและมีอิสระ',en:'User control and freedom',d:'มีทางออกฉุกเฉิน ปิด/ยกเลิก/Undo/Redo ได้'},
+  {id:'N4',th:'ความสม่ำเสมอและมาตรฐาน',en:'Consistency and standards',d:'ทำตามแบบแผนของแพลตฟอร์มและแนวปฏิบัติที่คนคุ้นเคย'},
+  {id:'N5',th:'ป้องกันข้อผิดพลาด',en:'Error prevention',d:'กันไม่ให้ผิดตั้งแต่แรก มี constraint และขอยืนยันก่อนทำสิ่งเสี่ยง'},
+  {id:'N6',th:'จดจำได้ดีกว่าต้องนึก',en:'Recognition rather than recall',d:'ให้ตัวเลือก ไอคอน และป้ายกำกับแสดงอยู่ ไม่บังคับให้ต้องนึกเอง'},
+  {id:'N7',th:'ยืดหยุ่นและมีประสิทธิภาพ',en:'Flexibility and efficiency of use',d:'มีตัวเร่ง เช่น ค้นหา ตัวกรอง คีย์ลัด และปรับแต่งได้'},
+  {id:'N8',th:'สวยงามและเรียบง่าย',en:'Aesthetic and minimalist design',d:'ไม่มีข้อมูลที่ไม่จำเป็นมาแย่งความสนใจจากสิ่งสำคัญ'},
+  {id:'N9',th:'ช่วยรู้ วินิจฉัย และกู้คืนจากข้อผิดพลาด',en:'Help users recognize, diagnose, and recover from errors',d:'ข้อความ error ใช้ภาษาคน บอกสาเหตุและวิธีแก้'},
+  {id:'N10',th:'ความช่วยเหลือและเอกสาร',en:'Help and documentation',d:'มีคำแนะนำที่ค้นง่าย ตรงกับงาน และกระชับ'}]},
+ U:{name:"Universal Design (7 Principles)",short:"Universal Design (7)",color:"#a78bfa",items:[
+  {id:'U1',th:'ใช้ได้อย่างเท่าเทียม',en:'Equitable use',d:'ทุกคนใช้งานได้ในแบบเดียวกัน ไม่แบ่งแยกหรือตีตรากลุ่มใด'},
+  {id:'U2',th:'ยืดหยุ่นในการใช้งาน',en:'Flexibility in use',d:'รองรับวิธีใช้ ความถนัด และจังหวะความเร็วที่หลากหลาย'},
+  {id:'U3',th:'ใช้ง่ายและเข้าใจได้ทันที',en:'Simple and intuitive use',d:'เข้าใจได้โดยไม่ต้องพึ่งประสบการณ์ ภาษา หรือสมาธิสูง'},
+  {id:'U4',th:'ข้อมูลรับรู้ได้ชัดเจน',en:'Perceptible information',d:'สื่อข้อมูลหลายช่องทาง (ภาพ/เสียง/ข้อความ) และมีคอนทราสต์เพียงพอ'},
+  {id:'U5',th:'ทนทานต่อความผิดพลาด',en:'Tolerance for error',d:'ลดอันตรายและผลเสียจากการกระทำโดยไม่ตั้งใจ'},
+  {id:'U6',th:'ใช้แรงกายน้อย',en:'Low physical effort',d:'ใช้งานได้อย่างมีประสิทธิภาพโดยไม่เหนื่อยและไม่ต้องทำซ้ำ ๆ'},
+  {id:'U7',th:'ขนาดและพื้นที่เหมาะสม',en:'Size and space for approach and use',d:'เป้าหมายใหญ่พอ มีระยะห่าง เอื้อมถึงและใช้งานสะดวก'}]}
+};
+const RULE={};for(const k in RULES)RULES[k].items.forEach(r=>RULE[r.id]={...r,g:k,color:RULES[k].color});
+const tag=id=>`<span class="rtag" style="--c:${RULE[id].color}"><b>${id}</b> ${RULE[id].th}</span>`;
+
+/* =================== HELPERS =================== */
+const $=s=>document.querySelector(s);
+let TIMERS=[];
+function tset(f,ms){const i=setTimeout(f,ms);TIMERS.push(i);return i}
+function iset(f,ms){const i=setInterval(f,ms);TIMERS.push(i);return i}
+function clearT(){TIMERS.forEach(i=>{clearTimeout(i);clearInterval(i)});TIMERS=[];document.querySelectorAll('.s-toast').forEach(t=>t.remove());}
+function sToast(msg,undo){document.querySelectorAll('.s-toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='s-toast';t.innerHTML='<span>'+msg+'</span>';if(undo){const b=document.createElement('button');b.textContent='เลิกทำ';b.onclick=()=>{undo();t.remove()};t.appendChild(b)}document.body.appendChild(t);setTimeout(()=>t.remove(),3200);}
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function show(id){document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));$(id).classList.add('active');window.scrollTo(0,0)}
+function openModal(h){$('#modalBox').innerHTML=h;$('#modal').classList.add('open');$('#modal').scrollTop=0}
+function closeModal(){$('#modal').classList.remove('open')}
+
+/* =================== LEVEL 1 : SHNEIDERMAN =================== */
+const SC_S=[
+{site:'ShopZaa',url:'shopzaa.co.th/account/settings',ans:['S1','N4'],
+html:`<div class="s-nav"><b>ShopZaa</b><span>หน้าแรก</span><span>บัญชีของฉัน</span></div>
+<div class="s-body"><h2>ตั้งค่าบัญชี</h2>
+<div class="s-card"><h3 style="font-family:Georgia,serif">ข้อมูลส่วนตัว</h3><label class="s-field">ชื่อ<input value="สมชาย ใจดี"></label><button class="s-btn green" style="border-radius:20px">บันทึก</button></div>
+<div class="s-card" style="margin-top:12px"><h3 style="font-family:'Comic Sans MS',cursive;text-transform:uppercase">Address / ที่อยู่</h3><label class="s-field">ที่อยู่<input value="123 ถ.สุขุมวิท กรุงเทพฯ"></label><button class="s-btn red" style="border-radius:0;font-family:monospace">SAVE CHANGES</button></div>
+<div class="s-card" style="margin-top:12px"><h3>รหัสผ่าน</h3><label class="s-field">รหัสผ่านใหม่<input type="password"></label><a href="#" onclick="return false" style="color:#2563eb;font-size:13px">ตกลงจ้า ✔</a></div></div>`,
+why:'ปุ่มที่ทำหน้าที่ “บันทึก” เหมือนกันทั้ง 3 จุด แต่สี รูปทรง ฟอนต์ และคำไม่เหมือนกันเลย (บันทึก / SAVE CHANGES / ตกลงจ้า) ส่วนปุ่มบันทึกสีแดงก็ดูเหมือนปุ่มลบ ผู้ใช้ต้องตีความใหม่ทุกส่วน จึงผิดหลักความสม่ำเสมอ'},
+
+{site:'ShopZaa',url:'shopzaa.co.th/home',ans:['S1','N4'],
+html:`<div class="s-nav" id="nv"></div><div class="s-body"><h2 id="pg">หน้าแรก</h2><p>ยินดีต้อนรับสู่ ShopZaa — ลองคลิกเมนูด้านบนเพื่อไปหน้าต่าง ๆ</p>
+<div class="s-grid"><div class="s-card"><div class="s-emoji">🎧</div>หูฟัง<br><b>฿990</b></div><div class="s-card"><div class="s-emoji">⌚</div>นาฬิกา<br><b>฿1,590</b></div><div class="s-card"><div class="s-emoji">👟</div>รองเท้า<br><b>฿2,290</b></div></div></div>`,
+init(r){const sets=[['หน้าแรก','สินค้า','ตะกร้า','บัญชี'],['Products','รถเข็น','Home','โปรไฟล์'],['บัญชีผู้ใช้','HOME','ช็อป','Cart 🛒'],['ตระกร้า','Account','หน้าหลัก','ของขาย']];const bg=['#1e3a8a','#15803d','#9333ea','#b45309'];let k=0;const nv=r.querySelector('#nv');
+const draw=()=>{const s=k?shuffle(sets[k%4]):sets[0];nv.style.background=bg[k%4];nv.style.justifyContent=k%2?'flex-end':'flex-start';nv.innerHTML='<b>ShopZaa</b>'+s.map(x=>'<span>'+x+'</span>').join('');nv.querySelectorAll('span').forEach(sp=>sp.onclick=()=>{r.querySelector('#pg').textContent=sp.textContent;k++;draw()})};draw();},
+why:'ทุกครั้งที่คลิก เมนูจะสลับลำดับ ย้ายฝั่ง เปลี่ยนสี และเปลี่ยนชื่อ (ตะกร้า → รถเข็น → Cart) ผู้ใช้จึงจำตำแหน่งไม่ได้และต้องอ่านใหม่ทุกครั้ง ซึ่งผิดทั้งความสม่ำเสมอภายในระบบและมาตรฐานของเว็บทั่วไป'},
+
+{site:'MediClinic Supply',url:'mediclinic-supply.com/order',ans:['S2','N7','U2'],
+html:`<div class="s-nav"><b>MediClinic Supply</b><span>สั่งซื้อ</span><span>ประวัติ</span></div><div class="s-body">
+<div class="s-alert">ℹ️ เพื่อความปลอดภัย ระบบ<b>ปิดใช้งาน</b>ปุ่ม “สั่งซื้ออีกครั้ง” รายการโปรด และคีย์ลัดทั้งหมด กรุณาเลือกสินค้าใหม่ทีละขั้นทุกครั้ง</div>
+<h3>ประวัติการสั่งซื้อ (คุณสั่งรายการเดิมทุกเดือน)</h3>
+<table class="s-table"><tr><th>วันที่</th><th>รายการ</th><th></th></tr><tr><td>01/03</td><td>ถุงมือยาง M × 50 กล่อง, แอลกอฮอล์ 70% × 20 ขวด</td><td class="s-muted">—</td></tr><tr><td>01/02</td><td>ถุงมือยาง M × 50 กล่อง, แอลกอฮอล์ 70% × 20 ขวด</td><td class="s-muted">—</td></tr><tr><td>01/01</td><td>ถุงมือยาง M × 50 กล่อง, แอลกอฮอล์ 70% × 20 ขวด</td><td class="s-muted">—</td></tr></table>
+<h3>สั่งซื้อใหม่</h3><div class="s-row"><select><option>1. เลือกหมวด</option></select><select disabled><option>2. หมวดย่อย</option></select><select disabled><option>3. ยี่ห้อ</option></select><select disabled><option>4. ขนาด</option></select><select disabled><option>5. หน่วย</option></select></div>
+<p class="s-muted">สินค้า 1 รายการใช้ 14 ขั้นตอน (Tab / Enter ใช้ไม่ได้ในหน้านี้)</p></div>`,
+why:'ลูกค้าสั่งของเดิมทุกเดือน แต่ระบบไม่มี “สั่งซ้ำ” รายการโปรด หรือคีย์ลัดเลย ผู้ใช้ประจำต้องทำ 14 ขั้นตอนทุกครั้งเหมือนมือใหม่ จึงผิดหลักการรองรับผู้ใช้ทุกระดับและการมีทางลัด (Flexibility & efficiency)'},
+
+{site:'PayFast',url:'payfast.co/checkout',ans:['S3','N1'],
+html:`<div class="s-nav"><b>PayFast</b><span class="sp"></span><span>🔒 ชำระเงินปลอดภัย</span></div><div class="s-body"><h2>สรุปคำสั่งซื้อ</h2>
+<table class="s-table"><tr><td>🎧 หูฟังไร้สาย</td><td>฿990</td></tr><tr><td>📦 ค่าส่ง</td><td>฿300</td></tr><tr><th>รวม</th><th>฿1,290</th></tr></table><br>
+<button class="s-btn" id="pay">ชำระเงิน ฿1,290</button><p class="s-muted">ลองกดปุ่มชำระเงินดู</p><p id="log" style="color:#b91c1c;font-size:13px"></p></div>`,
+init(r){let n=0;r.querySelector('#pay').onclick=()=>{n++;if(n>=3)r.querySelector('#log').textContent='📄 รายการเดินบัญชี (เพิ่งอัปเดต): ตัดเงิน ฿1,290 × '+n+' ครั้ง'}},
+why:'กดชำระเงินแล้วไม่มีอะไรเกิดขึ้นเลย ไม่มี loading ไม่มีข้อความสำเร็จหรือล้มเหลว ผู้ใช้เลยกดซ้ำและโดนตัดเงินหลายรอบ ทั้งหมดนี้เพราะระบบไม่ให้ feedback และไม่แสดงสถานะ'},
+
+{site:'ShopZaa',url:'shopzaa.co.th/products',ans:['S3','N1'],
+html:`<div class="s-nav"><b>ShopZaa</b><span>สินค้า</span><span class="sp"></span><span>🛒 ตะกร้า <span class="s-badge">0</span></span></div><div class="s-body"><h2>สินค้าแนะนำ</h2><div class="s-grid">
+<div class="s-card"><div class="s-emoji">🎧</div>หูฟัง<br><b>฿990</b><br><br><button class="s-btn">ใส่ตะกร้า</button></div>
+<div class="s-card"><div class="s-emoji">⌚</div>นาฬิกา<br><b>฿1,590</b><br><br><button class="s-btn">ใส่ตะกร้า</button></div>
+<div class="s-card"><div class="s-emoji">🎒</div>กระเป๋า<br><b>฿790</b><br><br><button class="s-btn">ใส่ตะกร้า</button></div></div></div>`,
+why:'กด “ใส่ตะกร้า” แล้วตัวเลขตะกร้ายังเป็น 0 ไม่มี toast ไม่มีแอนิเมชัน ผู้ใช้ไม่รู้ว่าเพิ่มสำเร็จหรือเปล่า (ความจริงระบบเพิ่มให้แล้ว แต่ไม่บอก)'},
+
+{site:'BookBuy',url:'bookbuy.in.th/checkout/step-3',ans:['S4','N1'],
+html:`<div class="s-nav"><b>BookBuy 📚</b></div><div class="s-body"><p class="s-muted">ขั้นที่ 3 / 3 — ตรวจสอบและยืนยัน</p><h2>ยืนยันคำสั่งซื้อ</h2>
+<div class="s-card">📕 Don’t Make Me Think × 1 — ฿650<br>📗 The Design of Everyday Things × 1 — ฿720<hr>รวม <b>฿1,370</b> · ส่งถึง: 99/9 ถ.พหลโยธิน</div><br><button class="s-btn" id="cf">ยืนยันคำสั่งซื้อ</button></div>`,
+init(r){r.querySelector('#cf').onclick=()=>{r.querySelector('.s-body').innerHTML='<h2>ยินดีต้อนรับสู่ BookBuy 📚</h2><p>เลือกซื้อหนังสือใหม่ได้เลย!</p><div class="s-grid"><div class="s-card">📕 นิยายแนะนำ</div><div class="s-card">📗 หนังสือเรียน</div><div class="s-card">📘 การ์ตูน</div></div>'}},
+why:'กดยืนยันแล้วระบบเด้งกลับหน้าแรกเฉย ๆ ไม่มีหน้า “สั่งซื้อสำเร็จ” ไม่มีเลขคำสั่งซื้อหรือข้อความยืนยัน ผู้ใช้ไม่รู้ว่างานจบหรือยัง (ไม่มี closure)'},
+
+{site:'GovForm',url:'eservice.example.go.th/profile',ans:['S5','N5','U5'],
+html:`<div class="s-nav"><b>ระบบบริการออนไลน์</b></div><div class="s-body"><h2>แก้ไขข้อมูลส่วนตัว</h2>
+<label class="s-field">วันเกิด (พิมพ์รูปแบบใดก็ได้)<input value="31/02/25xx"></label>
+<label class="s-field">เบอร์โทรศัพท์<input value="08x-abc-defg"></label>
+<label class="s-field">จำนวนบุตร<input type="text" value="-3"></label>
+<div style="display:flex;gap:2px"><button class="s-btn">บันทึก</button><button class="s-btn">ลบบัญชีถาวร</button></div></div>`,
+why:'ช่องข้อมูลรับค่าที่เป็นไปไม่ได้ทั้งหมด (31 ก.พ., เบอร์มีตัวอักษร, บุตร -3 คน) เพราะไม่มี date picker หรือ input mask แถมปุ่ม “ลบบัญชีถาวร” ยังหน้าตาเหมือนและอยู่ติดกับ “บันทึก” จึงกดพลาดได้ง่ายมาก'},
+
+{site:'MailBox',url:'mailbox.app/inbox',ans:['S6','N3','U5'],
+html:`<div class="s-nav"><b>✉ MailBox</b><span>กล่องจดหมาย</span></div><div class="s-body"><h2>กล่องจดหมาย</h2><div id="m" class="s-muted">ลองจัดการอีเมลดู</div>
+<table class="s-table"><tr><td>📧 ฝ่ายบุคคล: สัญญาจ้างงาน (สำคัญ)</td><td><button class="s-btn ghost del">🗑</button></td></tr><tr><td>📧 อาจารย์ที่ปรึกษา: ผลสอบ</td><td><button class="s-btn ghost del">🗑</button></td></tr><tr><td>📧 ธนาคาร: ใบแจ้งยอด</td><td><button class="s-btn ghost del">🗑</button></td></tr><tr><td>📧 โปรโมชั่น 11.11</td><td><button class="s-btn ghost del">🗑</button></td></tr></table></div>`,
+init(r){r.querySelectorAll('.del').forEach(b=>b.onclick=()=>{b.closest('tr').remove();const m=r.querySelector('#m');m.className='s-err';m.textContent='🗑 ลบถาวรแล้ว — ระบบนี้ไม่มีถังขยะและกู้คืนไม่ได้'})},
+why:'กดถังขยะทีเดียวอีเมลหายถาวร ไม่มี Undo ไม่มีโฟลเดอร์ถังขยะ ถ้ากดพลาดโดนอีเมลสัญญาจ้างก็จบ จึงผิดหลักการย้อนกลับได้ง่าย'},
+
+{site:'NewsNow',url:'newsnow.today/article/123',ans:['S7','N3'],
+html:`<div class="s-nav"><b>NewsNow</b><span>ข่าว</span><span>กีฬา</span></div><div class="s-body"><h2>นักวิจัยค้นพบวิธีออกแบบเว็บที่ดีขึ้น</h2>
+<div style="background:#000;color:#fff;padding:18px;border-radius:10px">▶ วิดีโอโฆษณาเล่นอัตโนมัติ 🔊 เสียงดัง (ไม่มีปุ่มปิดเสียง)</div>
+<p>การศึกษาล่าสุดพบว่าผู้ใช้ต้องการควบคุมการใช้งานด้วยตัวเอง...</p>
+<div class="s-alert">⏳ คุณจะถูกพาไปหน้าโปรโมชั่นใน <b id="cd">8</b> วินาที</div></div>`,
+init(r){let t=8;const c=r.querySelector('#cd');iset(()=>{t--;if(t>0)c.textContent=t;else if(t===0)r.querySelector('.s-body').innerHTML='<div style="background:#facc15;padding:30px;text-align:center;border-radius:12px"><h2>📢 โปรโมชั่นพิเศษ!!!</h2><p>คุณถูกพามาที่หน้านี้โดยอัตโนมัติ</p><p class="s-muted">ปุ่มย้อนกลับถูกปิดในหน้านี้ · วิดีโอโฆษณาจะเล่นต่ออีก 60 วินาที</p></div>'},1000)},
+why:'ระบบเล่นวิดีโอและเสียงเอง แล้วยังพาผู้ใช้ไปหน้าอื่นทั้งที่กำลังอ่านข่าว โดยไม่มีปุ่มยกเลิกหรือย้อนกลับ ผู้ใช้กลายเป็นฝ่ายถูกระบบควบคุม (ผิดหลัก Internal locus of control)'},
+
+{site:'ThaiParcel',url:'thaiparcel.co/track',ans:['S8','N6'],
+html:`<div class="s-nav"><b>📦 ThaiParcel</b></div><div class="s-body" id="box"><h3>ขั้นตอนที่ 1/2</h3><p>เลขพัสดุของคุณคือ</p><div style="font-size:28px;font-weight:700;letter-spacing:3px">TH 8812 4471 92 TH</div><p class="s-muted">ข้อความนี้จะหายไปใน <b id="t">5</b> วินาที</p></div>`,
+init(r){let t=5;const c=r.querySelector('#t');iset(()=>{t--;if(t>0)c.textContent=t;else if(t===0)r.querySelector('#box').innerHTML='<h3>ขั้นตอนที่ 2/2</h3><label class="s-field">กรุณากรอกเลขพัสดุ 13 หลักที่แสดงเมื่อสักครู่<input placeholder="TH _ _ _ _ _ _ _ _ _ _ TH"></label><p class="s-muted">ไม่สามารถย้อนกลับไปดูหน้าก่อนหน้าได้</p><button class="s-btn">ติดตามพัสดุ</button>'},1000)},
+why:'ระบบโชว์เลขพัสดุไม่กี่วินาที แล้วให้ผู้ใช้พิมพ์กลับเองในหน้าถัดไป ทั้งที่ระบบรู้เลขนี้อยู่แล้ว เท่ากับบังคับให้ใช้ความจำระยะสั้น (ควร auto-fill หรือแสดงค้างไว้)'},
+
+{site:'CloudBox',url:'cloudbox.io/pricing',ans:['S8','N6'],
+html:`<div class="s-nav"><b>☁ CloudBox</b><span>ราคา</span></div><div class="s-body"><h2>เลือกแพ็กเกจ</h2><div class="s-alert">ระบบไม่มีตารางเปรียบเทียบ — กรุณาจดราคาและฟีเจอร์ของแต่ละแผนไว้เปรียบเทียบเอง</div>
+<div class="s-row" style="gap:2px"><span class="tab" data-k="Basic">Basic</span><span class="tab" data-k="Pro">Pro</span><span class="tab" data-k="Max">Max</span></div><div class="s-card" id="pl" style="border-radius:0 12px 12px 12px"></div></div>`,
+init(r){const P={Basic:['ราคา ฿199/เดือน','พื้นที่ 50 GB','ผู้ใช้ 1 คน','ไม่มีซัพพอร์ต'],Pro:['ผู้ใช้ 5 คน','ซัพพอร์ตทางอีเมล','พื้นที่ 1 TB','ราคา ฿2,388/ปี'],Max:['ซัพพอร์ต 24 ชม.','ราคา ฿0.55/ชั่วโมง','ผู้ใช้ไม่จำกัด','พื้นที่ 5,000 GB']};const sh=k=>{r.querySelector('#pl').innerHTML='<h3>แผน '+k+'</h3><ul>'+P[k].map(x=>'<li>'+x+'</li>').join('')+'</ul>';r.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.k===k))};r.querySelectorAll('.tab').forEach(t=>t.onclick=()=>sh(t.dataset.k));sh('Basic')},
+why:'เห็นได้ทีละแผน ลำดับฟีเจอร์ไม่ตรงกัน และหน่วยราคาก็ต่างกัน (เดือน/ปี/ชั่วโมง, GB/TB) ผู้ใช้ต้องจำและคำนวณเองในหัว ควรมีตารางเปรียบเทียบวางคู่กัน'},
+
+{site:'ShopZaa',url:'shopzaa.co.th/login',ans:[],
+html:`<div class="s-nav"><b>ShopZaa</b><span class="sp"></span><span>ช่วยเหลือ</span></div><div class="s-body" style="max-width:440px"><h2>เข้าสู่ระบบ</h2>
+<label class="s-field">อีเมล<input id="em" type="email" placeholder="name@mail.com"></label>
+<label class="s-field">รหัสผ่าน<input id="pw" type="password" placeholder="อย่างน้อย 6 ตัวอักษร"></label>
+<div class="s-row"><button class="s-btn ghost" id="tg">👁 แสดงรหัสผ่าน</button><a href="#" onclick="return false" style="color:#2563eb;font-size:14px">ลืมรหัสผ่าน?</a></div><br>
+<button class="s-btn" id="go">เข้าสู่ระบบ</button><div id="msg"></div></div>`,
+init(r){const pw=r.querySelector('#pw'),em=r.querySelector('#em'),msg=r.querySelector('#msg'),tg=r.querySelector('#tg');tg.onclick=()=>{pw.type=pw.type==='password'?'text':'password';tg.textContent=pw.type==='password'?'👁 แสดงรหัสผ่าน':'🙈 ซ่อนรหัสผ่าน'};r.querySelector('#go').onclick=()=>{if(!em.value.includes('@')){msg.className='s-err';msg.textContent='กรุณากรอกอีเมลให้ถูกรูปแบบ เช่น name@mail.com';em.focus();return}if(pw.value.length<6){msg.className='s-err';msg.textContent='รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';pw.focus();return}msg.className='s-ok';msg.textContent='✓ เข้าสู่ระบบสำเร็จ กำลังพาไปหน้าแรก...'}},
+why:'ห้องนี้ปกติ: ป้ายกำกับชัด มีปุ่มแสดง/ซ่อนรหัสผ่าน มีลิงก์ลืมรหัสผ่าน error บอกสาเหตุและวิธีแก้ และมี feedback เมื่อสำเร็จ'},
+
+{site:'ShopZaa',url:'shopzaa.co.th/products',ans:[],
+html:`<div class="s-nav"><b>ShopZaa</b><span>สินค้า</span><span class="sp"></span><span>🛒 ตะกร้า <span class="s-badge" id="bd">0</span></span></div><div class="s-body"><h2>สินค้าแนะนำ</h2><div class="s-grid">
+<div class="s-card"><div class="s-emoji">🎧</div>หูฟัง<br><b>฿990</b><br><br><button class="s-btn add" data-n="หูฟัง">ใส่ตะกร้า</button></div>
+<div class="s-card"><div class="s-emoji">⌚</div>นาฬิกา<br><b>฿1,590</b><br><br><button class="s-btn add" data-n="นาฬิกา">ใส่ตะกร้า</button></div>
+<div class="s-card"><div class="s-emoji">🎒</div>กระเป๋า<br><b>฿790</b><br><br><button class="s-btn add" data-n="กระเป๋า">ใส่ตะกร้า</button></div></div></div>`,
+init(r){let c=0;const bd=r.querySelector('#bd');r.querySelectorAll('.add').forEach(b=>b.onclick=()=>{c++;bd.textContent=c;sToast('✓ เพิ่ม “'+b.dataset.n+'” ลงตะกร้าแล้ว',()=>{c--;bd.textContent=c})})},
+why:'ห้องนี้ปกติ: กดใส่ตะกร้าแล้วตัวเลขเพิ่ม มี toast บอกผล และกด “เลิกทำ” ได้'}
+];
+
+/* =================== LEVEL 2 : NIELSEN =================== */
+const SC_N=[
+{site:'JobApply',url:'jobapply.co/upload',ans:['N1','S3'],
+html:`<div class="s-nav"><b>JobApply</b></div><div class="s-body"><h2>อัปโหลดเอกสารประกอบการสมัคร</h2><div class="s-card">📄 Resume_Final_v7.pdf (24 MB)</div><br><button class="s-btn" id="up">อัปโหลด</button><p class="s-muted">สถานะ: <span id="st"></span></p></div>`,
+init(r){r.querySelector('#up').onclick=e=>{e.target.disabled=true;r.style.cursor='wait'}},
+why:'กดอัปโหลดแล้วปุ่มค้าง เมาส์หมุน แต่ไม่มี progress bar ไม่มี % และไม่บอกว่าสำเร็จหรือล้มเหลว ผู้ใช้ไม่รู้ว่าต้องรอต่อหรือควรลองใหม่'},
+
+{site:'MyApp',url:'myapp.io/settings/notifications',ans:['N1','S3'],
+html:`<div class="s-nav"><b>MyApp</b><span>ตั้งค่า</span></div><div class="s-body"><h2>การแจ้งเตือน</h2>
+<div class="setrow">แจ้งเตือนทางอีเมล <span class="tg-bad"></span></div><div class="setrow">แจ้งเตือนทาง SMS (มีค่าใช้จ่าย ฿2/ข้อความ) <span class="tg-bad"></span></div><div class="setrow">แจ้งเตือนโปรโมชั่น <span class="tg-bad"></span></div>
+<p class="s-muted">ลองกดสวิตช์ดู — สถานะปัจจุบัน: ?</p></div>`,
+why:'สวิตช์หน้าตาเหมือนเดิมตลอด ไม่ว่าจะเปิดหรือปิด กดแล้วก็ไม่เปลี่ยนสีหรือตำแหน่ง ผู้ใช้เลยไม่รู้ว่า SMS ที่มีค่าใช้จ่ายเปิดอยู่หรือเปล่า (ไม่แสดงสถานะของระบบ)'},
+
+{site:'K-Bank Pro',url:'kbankpro.example/home',ans:['N2','U3'],
+html:`<div class="s-nav" style="background:#065f46"><b>K-Bank Pro</b></div><div class="s-body"><h2>Account Dashboard</h2>
+<div class="s-card"><p>ACCT_BAL: <b>THB 1.2905E+4</b></p><p>LAST_TXN_TS: 1735689600 (epoch)</p><p>TXN_STATUS: 0x00 OK_ACK</p></div><br>
+<div class="s-row"><button class="s-btn">EXECUTE DEBIT_TXN</button><button class="s-btn ghost">INVOKE ACCT_SYNC()</button><button class="s-btn ghost">🗑️ บันทึกรายการโปรด</button><button class="s-btn ghost">💾 ลบผู้รับเงิน</button></div></div>`,
+why:'ใช้ภาษาของโปรแกรมเมอร์ (EXECUTE DEBIT_TXN, epoch, E+4) แทนภาษาคน เช่น “โอนเงิน” “ยอดคงเหลือ ฿12,905” และใช้ไอคอนผิดความหมาย (ถังขยะ = บันทึก, แผ่นดิสก์ = ลบ) จึงไม่ตรงกับโลกจริง'},
+
+{site:'SmartAir',url:'smartair.home/remote',ans:['N2'],
+html:`<div class="s-nav" style="background:#0f766e"><b>❄ SmartAir รีโมตแอร์</b></div><div class="s-body"><h2>ปรับอุณหภูมิ</h2>
+<div id="tp" style="font-size:54px;font-weight:700;color:#fff;text-align:center;border-radius:16px;padding:20px;max-width:340px">25°C</div><br>
+<input type="range" id="sl" min="0" max="14" value="5" style="width:340px"><div class="s-muted" style="width:340px;display:flex;justify-content:space-between"><span>◀ ร้อน</span><span>เย็น ▶</span></div>
+<p>โหมด: <button class="s-btn ghost">🔥 ทำความเย็น</button> <button class="s-btn ghost">❄ ทำความร้อน</button></p></div>`,
+init(r){const s=r.querySelector('#sl'),d=r.querySelector('#tp');const f=()=>{const t=30-Number(s.value);d.textContent=t+'°C';d.style.background='hsl('+((t-16)/14*220)+',75%,48%)'};s.oninput=f;f()},
+why:'เลื่อนขวาอุณหภูมิลดแทนที่จะเพิ่ม สีกลับด้าน (ร้อนเป็นสีน้ำเงิน เย็นเป็นสีแดง) และไอคอนไฟ 🔥 ใช้แทนโหมดเย็น ทุกอย่างสวนกับที่คนคุ้นเคยในโลกจริง'},
+
+{site:'ReadMore',url:'readmore.blog/ux-tips',ans:['N3','S7'],
+html:`<div class="s-nav"><b>ReadMore</b></div><div class="s-body"><h2>10 เคล็ดลับ UX ที่คุณต้องรู้</h2><p>1. ให้ผู้ใช้ควบคุมได้เสมอ... 2. ...</p><p style="filter:blur(3px)">Lorem ipsum เนื้อหาบทความที่ถูกบังไว้ ลองอ่านดูสิ แต่คุณอ่านไม่ได้ เพราะมีหน้าต่างบังอยู่ เนื้อหายาวต่อไปเรื่อย ๆ</p></div>
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><div class="s-card" style="max-width:340px;text-align:center"><h3>📩 สมัครสมาชิกเพื่ออ่านต่อ!</h3><p class="s-muted">กรอกอีเมลและเบอร์โทรเพื่อปลดล็อกบทความ</p><div class="s-row" style="justify-content:center"><button class="s-btn" id="a">สมัครเลย</button><button class="s-btn" id="b">สมัครตอนนี้</button></div></div></div>`,
+init(r){r.querySelectorAll('#a,#b').forEach(b=>b.onclick=()=>sToast('กรุณากรอกข้อมูลบัตรเครดิตเพื่อยืนยันตัวตน'))},
+why:'ป๊อปอัปไม่มีปุ่ม X ไม่มี “ไว้ทีหลัง” กด ESC หรือคลิกข้างนอกก็ปิดไม่ได้ ทั้ง 2 ปุ่มแปลว่าสมัครเหมือนกัน ผู้ใช้จึงไม่มีทางออกฉุกเฉิน (Emergency exit)'},
+
+{site:'WeirdStore',url:'weirdstore.shop',ans:['N4','S1'],
+html:`<div class="s-nav" style="background:#fff;color:#111;border-bottom:1px solid #ddd"><span>หน้าแรก</span><span>สินค้า</span><span class="sp"></span><span id="mag" style="font-size:20px">🔍</span><span style="font-size:20px">♥</span></div>
+<div class="s-body"><h2>สินค้าใหม่</h2><p>ข้อความนี้ <u style="color:#2563eb">เป็นแค่ตัวหนังสือธรรมดา คลิกไม่ได้</u> แต่ <span style="color:#111">ลิงก์จริงซ่อนอยู่ตรงนี้</span></p>
+<p><b>เลือกสีที่ต้องการ (เลือกได้หลายสี):</b><br><label><input type="radio" name="c"> แดง</label> <label><input type="radio" name="c2"> ดำ</label> <label><input type="radio" name="c3"> ขาว</label></p>
+<div class="s-row"><button class="s-btn ghost">ยืนยัน</button><button class="s-btn">ยกเลิก</button></div></div>
+<div style="position:absolute;right:14px;bottom:10px;font-weight:800;color:#999">WeirdStore™ (โลโก้)</div>`,
+init(r){r.querySelector('#mag').onclick=()=>sToast('🛒 เปิดตะกร้าสินค้า')},
+why:'ฝืนมาตรฐานเว็บหลายจุด: ตัวหนังสือธรรมดาขีดเส้นใต้สีน้ำเงินจนดูเหมือนลิงก์ ไอคอน 🔍 กลับเปิดตะกร้า ใช้ radio กับตัวเลือกที่เลือกได้หลายอัน (ควรเป็น checkbox) ปุ่มยกเลิกกลับเป็นปุ่มหลักสีเด่น และโลโก้อยู่มุมล่างขวา'},
+
+{site:'FlyCheap',url:'flycheap.travel/booking',ans:['N5','S5','U5'],
+html:`<div class="s-nav" style="background:#0369a1"><b>✈ FlyCheap</b></div><div class="s-body"><h2>จองเที่ยวบิน กรุงเทพฯ ⇄ เชียงใหม่</h2>
+<label class="s-field">วันเดินทางไป<input value="20/05/2026"></label><label class="s-field">วันเดินทางกลับ<input value="12/05/2026"></label><span style="color:#16a34a">✓ ข้อมูลถูกต้อง</span>
+<label class="s-field">จำนวนผู้โดยสาร<input value="0"></label>
+<div style="display:flex;gap:2px;margin-top:12px"><button class="s-btn">ชำระเงิน ฿3,580</button><button class="s-btn">ลบการจองทั้งหมด</button></div></div>`,
+why:'ระบบยอมให้วันกลับอยู่ก่อนวันไป และให้ผู้โดยสารเป็น 0 คน แล้วยังขึ้น “✓ ถูกต้อง” อีก ส่วนปุ่ม “ลบการจองทั้งหมด” ก็หน้าตาเหมือนปุ่มชำระเงินและอยู่ติดกัน ควรมี date picker ที่ล็อกวันไม่ให้ย้อนไปก่อนวันออกเดินทาง และต้องขอยืนยันก่อนลบ'},
+
+{site:'DocWriter',url:'docwriter.app/new',ans:['N6','S8'],
+html:`<div class="s-nav" style="background:#374151"><b>DocWriter</b></div><div class="s-body"><div class="s-row" style="font-size:22px;gap:14px;border-bottom:1px solid #ddd;padding-bottom:8px"><span>⎈</span><span>⌬</span><span>⏣</span><span>⍟</span><span>⎊</span><span>⌘</span></div>
+<p class="s-muted">ไอคอนไม่มีชื่อและไม่มี tooltip · จัดรูปแบบด้วยการพิมพ์คำสั่ง: ::B:: ตัวหนา, ::I:: ตัวเอียง, ::H2:: หัวข้อ, ::TBL3x4:: ตาราง (ดูคำสั่งทั้งหมดได้ในคู่มือหน้า 47)</p>
+<textarea style="width:100%;height:150px;font-family:inherit;padding:10px">::H2::รายงานวิชา UX ::B::บทนำ</textarea></div>`,
+why:'ผู้ใช้ต้องจำคำสั่งลับ (::B::, ::TBL3x4::) และเดาความหมายของไอคอนประหลาดที่ไม่มีป้ายชื่อ แทนที่จะเห็นปุ่ม B / I / ตาราง ให้กดได้เลย (Recognition rather than recall)'},
+
+{site:'MegaMart',url:'megamart.co/all-products',ans:['N7','S2','U2'],
+html:`<div class="s-nav"><b>MegaMart</b><span class="sp"></span><span>ทั้งหมด 120 รายการ</span></div><div class="s-body"><div class="s-alert">แสดงสินค้าทั้งหมดในหน้าเดียว เรียงแบบสุ่ม — ไม่มีช่องค้นหา ตัวกรอง หรือการเรียงลำดับ</div><p>ภารกิจ: หา “สายชาร์จ USB-C สีขาว”</p><div id="lst" class="s-grid"></div></div>`,
+init(r){const a=['สายชาร์จ','หูฟัง','เคส','ฟิล์ม','ลำโพง','เมาส์','คีย์บอร์ด','แบตสำรอง','หัวชาร์จ','ขาตั้ง'],b=['USB-C','Lightning','Micro USB','ไร้สาย','บลูทูธ','Pro','Mini','Max'],c=['สีขาว','สีดำ','สีแดง','สีฟ้า','สีชมพู'];let h='';for(let i=0;i<120;i++){const n=a[i%10]+' '+b[(i*7)%8]+' '+c[(i*3)%5];h+='<div class="s-card" style="font-size:13px">'+n+'<br><b>฿'+(99+((i*37)%900))+'</b></div>'}r.querySelector('#lst').innerHTML=h},
+why:'สินค้า 120 รายการที่เรียงแบบสุ่ม โดยไม่มีช่องค้นหา ตัวกรอง หรือการเรียงลำดับ ทั้งมือใหม่และมือโปรต้องไล่เลื่อนหาทีละชิ้นเหมือนกัน ระบบจึงไม่ยืดหยุ่นและไม่มีตัวเร่ง (Accelerators)'},
+
+{site:'SUPER SALE',url:'supersale-mega-deal.biz',ans:['N8','U3'],
+html:`<div style="background:#ff00aa;color:#fff;font-weight:800;padding:6px" class="mq-wrap"><span class="mq">🔥🔥 SALE!!! ลด 90%!!! ⚡ ด่วน!!! 🎁 แจกฟรี!!! 💥 วันนี้วันเดียว!!! 🔥🔥</span></div>
+<div class="s-body" style="background:linear-gradient(90deg,#fef08a,#a7f3d0,#fbcfe8)"><h2 class="blink" style="color:red;font-size:30px">⚠ โปรโมชั่นสุดคุ้ม!!! ⚠</h2>
+<div class="s-row"><button class="s-btn red">สมัครสมาชิก!</button><button class="s-btn green">รับคูปอง!</button><button class="s-btn" style="background:orange">แชร์ด่วน!</button><button class="s-btn" style="background:purple">ดาวน์โหลดแอป!</button><button class="s-btn" style="background:#000">ติดตามเรา!</button><button class="s-btn" style="background:teal">หมุนวงล้อ!</button></div>
+<p style="font-family:'Comic Sans MS';color:blue;font-size:20px">✨🎉💯 สินค้าคุณภาพ 💯🎉✨ <span class="blink">NEW!</span> <span class="blink">HOT!</span> <span class="blink">BEST!</span></p>
+<div class="s-card"><div class="s-emoji">🎧</div>หูฟัง ฿990 <a href="#" onclick="return false" style="font-size:10px;color:#999">ซื้อสินค้า</a></div></div>`,
+why:'หน้าเว็บเต็มไปด้วยแบนเนอร์กะพริบ ข้อความวิ่ง สีตีกัน และปุ่ม call-to-action 6 ปุ่มที่ไม่เกี่ยวกับงานหลัก แต่ปุ่ม “ซื้อสินค้า” ซึ่งสำคัญที่สุดกลับเล็กและจาง ข้อมูลที่ไม่จำเป็นแย่งความสนใจจากสิ่งสำคัญไปหมด'},
+
+{site:'RegisterNow',url:'registernow.org/form',ans:['N9','U5'],
+html:`<div class="s-nav"><b>RegisterNow</b></div><div class="s-body"><h2>ลงทะเบียนสัมมนา</h2>
+<label class="s-field">ชื่อ-นามสกุล<input value="สมหญิง รักเรียน"></label><label class="s-field">อีเมล<input value="somying@mail"></label><label class="s-field">ที่อยู่ออกใบกำกับภาษี<input value="88/1 ถ.รามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240"></label>
+<button class="s-btn" id="sb">ส่งข้อมูล</button><div id="er"></div></div>`,
+init(r){r.querySelector('#sb').onclick=()=>{r.querySelectorAll('input').forEach(i=>i.value='');r.querySelector('#er').innerHTML='<div class="s-err" style="font-family:monospace">ERROR -2147467259: UNEXPECTED_STATE_EXCEPTION at FormHandler.java:442</div>'}},
+why:'กดส่งแล้วขึ้นรหัส error ที่ผู้ใช้อ่านไม่รู้เรื่อง ไม่บอกว่าช่องไหนผิด (จริง ๆ คืออีเมลขาด .com) ไม่บอกวิธีแก้ และยังล้างข้อมูลที่กรอกไว้ทั้งหมดทิ้ง'},
+
+{site:'e-Tax',url:'etax.example.go.th/filing',ans:['N10'],
+html:`<div class="s-nav" style="background:#7c2d12"><b>ยื่นภาษีออนไลน์</b><span class="sp"></span><span id="hp">❓ ช่วยเหลือ</span></div><div class="s-body"><h2>แบบ ภ.ง.ด. 90 — ส่วนที่ 4</h2>
+<label class="s-field">ค่าลดหย่อนตามมาตรา 47(1)(ฌ) <span class="q" style="cursor:pointer;color:#2563eb">(?)</span><input></label>
+<label class="s-field">เงินได้ตามมาตรา 40(8) ที่เลือกหักค่าใช้จ่ายตามความจำเป็นและสมควร <span class="q" style="cursor:pointer;color:#2563eb">(?)</span><input></label>
+<label class="s-field">ยอดยกมาจาก ภ.ง.ด. 94 (ถ้ามี) <span class="q" style="cursor:pointer;color:#2563eb">(?)</span><input></label>
+<p class="s-muted">📎 คู่มือการกรอก (PDF 412 หน้า, ไม่มีสารบัญ, ค้นหาไม่ได้)</p></div>`,
+init(r){r.querySelectorAll('.q').forEach(q=>q.onclick=()=>sToast('ยังไม่มีคำอธิบายสำหรับช่องนี้'));r.querySelector('#hp').onclick=()=>sToast('ช่วยเหลือ: กรุณาส่งแฟกซ์ถึงฝ่ายบริการ ภายใน 15 วันทำการ')},
+why:'ฟอร์มซับซ้อนมาก แต่ปุ่ม (?) ไม่มีคำอธิบาย ส่วนช่วยเหลือให้ส่งแฟกซ์ และคู่มือเป็น PDF 412 หน้าที่ไม่มีสารบัญและค้นหาไม่ได้ ความช่วยเหลือจึงไม่ตรงกับงาน ไม่กระชับ และหาไม่เจอ'},
+
+{site:'MegaMart',url:'megamart.co/search',ans:[],
+html:`<div class="s-nav"><b>MegaMart</b></div><div class="s-body"><h2>ค้นหาสินค้า</h2><input id="q" placeholder="🔍 พิมพ์ชื่อสินค้า เช่น หูฟัง" style="width:100%;max-width:420px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-family:inherit;font-size:15px">
+<p class="s-muted" id="cnt"></p><div id="res" class="s-grid"></div></div>`,
+init(r){const items=['หูฟังบลูทูธ','หูฟังมีสาย','สายชาร์จ USB-C','สายชาร์จ Lightning','เคสโทรศัพท์','ลำโพงพกพา','เมาส์ไร้สาย','คีย์บอร์ด','แบตสำรอง','ขาตั้งมือถือ','ฟิล์มกระจก','หัวชาร์จเร็ว'];const q=r.querySelector('#q');const f=()=>{const v=q.value.trim();const m=items.filter(i=>i.includes(v));r.querySelector('#cnt').textContent=m.length?'พบ '+m.length+' รายการ':'ไม่พบสินค้า “'+v+'” ลองใช้คำอื่น เช่น “หูฟัง” หรือ “สายชาร์จ”';r.querySelector('#res').innerHTML=m.map(i=>'<div class="s-card">'+i+'</div>').join('')};q.oninput=f;f()},
+why:'ห้องนี้ปกติ: ค้นหาได้ทันที บอกจำนวนผลลัพธ์ และเมื่อไม่พบผลลัพธ์ก็แนะนำคำค้นอื่นให้'},
+
+{site:'MyApp',url:'myapp.io/settings/notifications',ans:[],
+html:`<div class="s-nav"><b>MyApp</b><span>ตั้งค่า</span></div><div class="s-body"><h2>การแจ้งเตือน</h2>
+<div class="setrow"><span>แจ้งเตือนทางอีเมล</span><span><small class="lb">เปิด</small> <span class="tg on"></span></span></div><div class="setrow"><span>แจ้งเตือนทาง SMS (มีค่าใช้จ่าย ฿2/ข้อความ)</span><span><small class="lb">ปิด</small> <span class="tg"></span></span></div><div class="setrow"><span>แจ้งเตือนโปรโมชั่น</span><span><small class="lb">ปิด</small> <span class="tg"></span></span></div></div>`,
+init(r){r.querySelectorAll('.tg').forEach(t=>t.onclick=()=>{t.classList.toggle('on');const on=t.classList.contains('on');t.previousElementSibling.textContent=on?'เปิด':'ปิด';sToast('บันทึกการตั้งค่าแล้ว: '+t.closest('.setrow').firstElementChild.textContent+' — '+(on?'เปิด':'ปิด'))})},
+why:'ห้องนี้ปกติ: สวิตช์แสดงสถานะชัดทั้งสีและข้อความ “เปิด/ปิด” และกดแล้วมี feedback ว่าบันทึกแล้ว'}
+];
+
+/* =================== LEVEL 3 : UNIVERSAL DESIGN =================== */
+const SC_U=[
+{site:'CityMall',url:'citymall.co.th',ans:['U1'],
+html:`<div class="s-nav" style="background:#be123c"><b>CityMall</b><span>โปรโมชั่น</span><span>ร้านค้า</span></div><div class="s-body">
+<div class="s-alert" style="background:#f3f4f6;border-color:#d1d5db;color:#374151">♿ ผู้พิการทางสายตาหรือผู้สูงอายุ กรุณาใช้ <u>“เว็บเวอร์ชันพิเศษ”</u> (Text-only · อัปเดตล่าสุดปี 2012 · ไม่มีโปรโมชั่น · ไม่มีตะกร้าสินค้า · ชำระเงินได้ที่สาขาเท่านั้น)</div>
+<h2>🎉 โปรโมชั่นเฉพาะเว็บไซต์หลัก</h2><div class="s-grid"><div class="s-card">👗 ลด 50%</div><div class="s-card">👟 ซื้อ 1 แถม 1</div><div class="s-card">🎁 คูปอง ฿200</div></div></div>`,
+why:'แยกผู้พิการและผู้สูงอายุไปใช้เว็บอีกเวอร์ชันที่เก่ากว่า ไม่มีโปรโมชั่นและไม่มีตะกร้า แทนที่จะออกแบบเว็บเดียวให้ทุกคนใช้ได้เท่ากัน จึงเป็นการแบ่งแยกและตีตราผู้ใช้'},
+
+{site:'SecureBank',url:'securebank.example/verify',ans:['U1','U4'],
+html:`<div class="s-nav" style="background:#1e293b"><b>SecureBank</b></div><div class="s-body"><h2>ยืนยันว่าคุณไม่ใช่บอท</h2>
+<div style="font-family:'Courier New';font-size:34px;letter-spacing:10px;background:repeating-linear-gradient(45deg,#ccc 0 4px,#eee 4px 8px);padding:14px;display:inline-block;transform:skewX(-18deg);color:#999;text-decoration:line-through">x7Qp9</div>
+<label class="s-field">พิมพ์ตัวอักษรในภาพ<input></label><p class="s-muted">ไม่มีตัวเลือกเสียงหรือวิธีอื่น · หากอ่านไม่ออก กรุณาเดินทางไปยืนยันตัวตนที่สาขา</p><button class="s-btn">ยืนยัน</button></div>`,
+why:'CAPTCHA มีแค่ภาพที่บิดเบี้ยวและคอนทราสต์ต่ำ ไม่มีเสียงหรือวิธีอื่นมาแทน ผู้พิการทางสายตาและสายตาเลือนรางจึงถูกกีดกันออกไป (ข้อมูลก็รับรู้ได้ทางเดียว)'},
+
+{site:'DragShop',url:'dragshop.io',ans:['U2','N7'],
+html:`<div class="s-nav" style="background:#4338ca"><b>DragShop</b></div><div class="s-body"><div class="s-alert">🖱 เว็บนี้รองรับเฉพาะเมาส์ (ไม่รองรับคีย์บอร์ด หน้าจอสัมผัส หรือโปรแกรมอ่านหน้าจอ) และปิดการซูมหน้าเว็บ</div>
+<p><b>วิธีซื้อ:</b> ลากสินค้าไปวางในตะกร้า (ไม่มีปุ่มสั่งซื้อ)</p><div class="s-row"><div class="s-card drag" draggable="true">🎧 หูฟัง</div><div class="s-card drag" draggable="true">⌚ นาฬิกา</div><div class="s-card drag" draggable="true">🎒 กระเป๋า</div></div><br><div class="drop" id="dz">🛒 ลากมาวางที่นี่</div></div>`,
+init(r){r.querySelectorAll('.drag').forEach(d=>d.ondragstart=e=>e.dataTransfer.setData('text',d.textContent));const z=r.querySelector('#dz');z.ondragover=e=>e.preventDefault();z.ondrop=e=>{e.preventDefault();z.innerHTML+='<div>✓ '+e.dataTransfer.getData('text')+'</div>'}},
+why:'ซื้อของได้ด้วยการลาก-วางด้วยเมาส์เท่านั้น ไม่มีปุ่มสำรอง ไม่รองรับคีย์บอร์ดหรือจอสัมผัส และยังปิดการซูม ผู้ที่ใช้มือไม่ถนัด ใช้มือถือ หรือใช้ screen reader จึงซื้อไม่ได้ (ระบบไม่เปิดให้เลือกวิธีใช้งาน)'},
+
+{site:'TicketKiosk',url:'kiosk.metro.local/buy',ans:['U3','N2'],
+html:`<div class="s-nav" style="background:#111"><b>🚇 ตู้จำหน่ายตั๋วอัตโนมัติ</b></div><div class="s-body"><h3>วิธีซื้อตั๋ว (กรุณาทำตามลำดับ)</h3>
+<ol style="line-height:1.9;font-size:14px"><li>กด ⊕ ค้างไว้ 3 วินาทีจนไฟสีส้มกะพริบ 2 ครั้ง</li><li>กด # สองครั้ง ตามด้วยรหัสสถานี 4 หลัก (ดูจากตารางรหัสด้านหลังตู้)</li><li>กด * เพื่อสลับระหว่างโหมด A (เที่ยวเดียว) และโหมด Ω (ไป-กลับ)</li><li>หากไฟเป็นสีม่วง ให้กด 0 แล้วเริ่มข้อ 1 ใหม่</li><li>หยอดเหรียญภายใน 7 วินาที มิฉะนั้นระบบจะยึดเหรียญ</li></ol>
+<div style="display:grid;grid-template-columns:repeat(4,60px);gap:6px">${['⊕','1','2','3','#','4','5','6','*','7','8','9','Ω','0','A','⏎'].map(k=>'<button class="s-btn ghost">'+k+'</button>').join('')}</div></div>`,
+why:'ซื้อตั๋วใบเดียวต้องทำตามคำสั่งซับซ้อน 5 ขั้น ใช้สัญลักษณ์ที่ไม่มีใครรู้ (Ω, ⊕) ใช้สีไฟเป็นรหัส และต้องไปดูรหัสสถานีหลังตู้ ทั้งนักท่องเที่ยว ผู้สูงอายุ และคนที่อ่านภาษาไทยไม่คล่องจะใช้ไม่ได้ ควรให้แตะชื่อสถานีบนแผนที่ได้เลย'},
+
+{site:'HealthCheck',url:'healthcheck.app/result',ans:['U4'],
+html:`<div class="s-nav" style="background:#f1f5f9;color:#cbd5e1"><b>HealthCheck</b></div><div class="s-body"><h2 style="color:#d1d5db">ผลตรวจสุขภาพของคุณ</h2>
+<p style="color:#e5e7eb;font-size:12px">กรุณาอ่านคำแนะนำสำคัญจากแพทย์: งดอาหาร 8 ชั่วโมงก่อนตรวจครั้งถัดไป และพบแพทย์ภายใน 7 วัน</p>
+<table class="s-table"><tr><td>น้ำตาลในเลือด</td><td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#ef4444"></span></td></tr><tr><td>คอเลสเตอรอล</td><td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#22c55e"></span></td></tr><tr><td>ความดัน</td><td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#ef4444"></span></td></tr></table>
+<label class="s-field" style="color:#d1d5db">เบอร์ติดต่อกลับ<input style="border-color:#fecaca"></label><p class="s-muted">* ช่องที่ขอบเป็นสีแดงอ่อนคือช่องบังคับ</p></div>`,
+why:'ข้อความสำคัญจากแพทย์เป็นสีเทาอ่อนบนพื้นขาว คอนทราสต์ต่ำมาก ผลตรวจบอกด้วยสีแดง/เขียวอย่างเดียว คนตาบอดสีแยกไม่ออก และช่องบังคับก็บอกแค่ด้วยสีขอบ ข้อมูลจึงรับรู้ไม่ได้ชัดเจน'},
+
+{site:'LearnOnline',url:'learnonline.ac.th/lesson/5',ans:['U4','U1'],
+html:`<div class="s-nav" style="background:#0e7490"><b>LearnOnline</b></div><div class="s-body"><h2>บทที่ 5: Universal Design</h2>
+<div style="background:#000;color:#fff;padding:40px;text-align:center;border-radius:10px">▶ วิดีโอบรรยาย 45 นาที<br><small style="color:#9ca3af">ไม่มีคำบรรยาย (CC) · ไม่มีเอกสารสรุป · ไม่มี transcript</small></div>
+<h3>ยืนยันตัวตนก่อนทำแบบทดสอบ</h3><p>🔊 ระบบจะ “อ่านรหัส OTP ออกเสียง” ผ่านลำโพงเพียงครั้งเดียว (ไม่แสดงเป็นตัวเลข / ไม่ส่ง SMS)</p><button class="s-btn">▶ ฟังรหัส</button></div>`,
+why:'วิดีโอไม่มีคำบรรยาย และรหัส OTP ส่งทางเสียงอย่างเดียว ผู้พิการทางการได้ยิน หรือคนที่อยู่ในที่เสียงดังจึงรับข้อมูลไม่ได้ ควรมีคำบรรยาย ข้อความ และ SMS ให้เลือก'},
+
+{site:'QuickPay',url:'quickpay.app/home',ans:['U5','N5','S5','S6'],
+html:`<div class="s-nav" style="background:#16a34a"><b>QuickPay</b></div><div class="s-body"><h2>สวัสดี คุณสมชาย</h2><p>ยอดเงิน: <b id="bal">฿48,250.00</b></p>
+<div style="display:flex;gap:3px"><button class="s-btn green" style="padding:18px">👁 ดูยอด</button><button class="s-btn green" style="padding:18px" id="tf">💸 โอนทั้งหมดให้ผู้รับล่าสุด</button></div><div id="o"></div></div>`,
+init(r){r.querySelector('#tf').onclick=()=>{r.querySelector('#bal').textContent='฿0.00';r.querySelector('#o').innerHTML='<div class="s-err">โอนสำเร็จ ฿48,250.00 ให้ “ร้านค้า ABC” — รายการนี้ยกเลิกไม่ได้</div>'}},
+why:'ปุ่มอันตราย “โอนทั้งหมด” วางติดและหน้าตาเหมือนปุ่มดูยอด กดเพียงครั้งเดียวเงินก็หมดบัญชี ไม่มีหน้าขอยืนยัน ไม่มีช่วงให้กดยกเลิก ระบบจึงไม่ทนต่อความผิดพลาดเลย'},
+
+{site:'SignUp+',url:'signupplus.com/confirm',ans:['U6'],
+html:`<div class="s-nav" style="background:#9333ea"><b>SignUp+</b></div><div class="s-body"><h2>ยืนยันการสมัคร</h2><p>อ่านข้อตกลง (หน้า <b id="pg">1</b>/30) — ต้องกด “ถัดไป” ทีละหน้า และเลื่อนลงจนสุดทุกหน้า</p><button class="s-btn ghost" id="nx">ถัดไป ›</button><br><br>
+<p><b>ขั้นสุดท้าย:</b> กดปุ่มค้างไว้ 10 วินาทีเพื่อยืนยัน (ถ้าปล่อยมือ ระบบจะเริ่มนับใหม่)</p>
+<button class="s-btn" id="hold" style="position:relative;overflow:hidden;width:280px">✋ กดค้างไว้<span id="bar" style="position:absolute;left:0;bottom:0;height:5px;background:#fbbf24;width:0"></span></button><p class="s-muted" id="hs"></p></div>`,
+init(r){let p=1;r.querySelector('#nx').onclick=()=>{if(p<30)p++;r.querySelector('#pg').textContent=p};let v=0,iv=null;const b=r.querySelector('#hold'),bar=r.querySelector('#bar'),hs=r.querySelector('#hs');const start=()=>{clearInterval(iv);iv=iset(()=>{v+=1;bar.style.width=v+'%';if(v>=100){clearInterval(iv);hs.textContent='✓ ยืนยันแล้ว (คุณใช้แรงกดค้าง 10 วินาที)'}},100)};const stop=()=>{if(v<100){clearInterval(iv);v=0;bar.style.width='0';hs.textContent='ปล่อยมือเร็วไป เริ่มใหม่!'}};b.onmousedown=start;b.ontouchstart=start;b.onmouseup=stop;b.onmouseleave=stop;b.ontouchend=stop},
+why:'ต้องกด “ถัดไป” 30 ครั้ง และกดปุ่มค้างไว้ 10 วินาที ปล่อยเมื่อไหร่ต้องเริ่มนับใหม่ ผู้ที่มือสั่น ผู้สูงอายุ หรือคนที่บาดเจ็บที่มือจะเหนื่อยหรือทำไม่ได้เลย จึงผิดหลักใช้แรงกายน้อย'},
+
+{site:'TinyNews',url:'tinynews.press',ans:['U7','U6'],
+html:`<div class="s-nav" style="background:#475569;padding:4px 10px;font-size:10px"><b>TinyNews</b><span>หน้าแรก</span><span>การเมือง</span><span>กีฬา</span><span>บันเทิง</span><span>เทคโนโลยี</span></div><div class="s-body">
+<div class="s-card" style="position:relative;background:#fef3c7">📢 โฆษณา: ครีมกันแดด SPF50 <span style="position:absolute;top:2px;right:2px;font-size:7px;cursor:pointer">✕</span></div>
+<h2>บทความ: อนาคตของเทคโนโลยี</h2><p>เนื้อหาบทความ...</p>
+<div style="display:flex;gap:1px"><button style="font-size:9px;padding:1px 3px">ถูกใจ</button><button style="font-size:9px;padding:1px 3px">แชร์</button><button style="font-size:9px;padding:1px 3px">รายงาน</button><button style="font-size:9px;padding:1px 3px">ลบ</button><button style="font-size:9px;padding:1px 3px">บล็อก</button></div>
+<p style="font-size:10px;line-height:1"><a href="#" onclick="return false">ข่าว1</a>|<a href="#" onclick="return false">ข่าว2</a>|<a href="#" onclick="return false">ข่าว3</a>|<a href="#" onclick="return false">ข่าว4</a>|<a href="#" onclick="return false">ข่าว5</a>|<a href="#" onclick="return false">ข่าว6</a></p></div>`,
+why:'ปุ่มและลิงก์เล็กมาก (ปุ่ม ✕ ราว 7px ปุ่มสูงราว 12px) และวางชิดกันแทบไม่มีช่องว่าง “ถูกใจ” อยู่ติด “ลบ/บล็อก” บนมือถือจะกดพลาดง่ายมาก ควรมีขนาดอย่างน้อยราว 44×44px และเว้นระยะห่างให้เพียงพอ'},
+
+{site:'VisaOnline',url:'visa.example.go/apply',ans:['U2','U1'],
+html:`<div class="s-nav" style="background:#1e40af"><b>VisaOnline</b></div><div class="s-body"><div class="s-err">⏱ เซสชันจะหมดอายุใน <b id="ss">20</b> วินาที — ไม่สามารถขยายเวลาได้ · หน้านี้ปิดการซูม</div>
+<h2>แบบฟอร์มขอวีซ่า (32 ช่อง)</h2><label class="s-field">ชื่อ-นามสกุล (ตามหนังสือเดินทาง)<input></label><label class="s-field">เลขหนังสือเดินทาง<input></label><label class="s-field">ที่อยู่ระหว่างพำนัก<input></label><p class="s-muted">... อีก 29 ช่อง</p></div>`,
+init(r){let t=20;const s=r.querySelector('#ss');iset(()=>{t--;if(t<=0){t=20;r.querySelectorAll('input').forEach(i=>i.value='');sToast('⛔ เซสชันหมดอายุ! ข้อมูลทั้งหมดถูกล้าง')}s.textContent=t},1000)},
+why:'ให้เวลากรอกฟอร์ม 32 ช่องแค่ 20 วินาที ขยายเวลาไม่ได้ และหมดเวลาแล้วข้อมูลถูกล้าง แถมยังปิดการซูม คนที่พิมพ์ช้า ใช้อุปกรณ์ช่วย หรือสายตาไม่ดีจะไม่มีทางทำเสร็จ ระบบจึงไม่ยืดหยุ่นตามจังหวะของผู้ใช้'},
+
+{site:'VaccineReg',url:'vaccine.example.go.th',ans:[],
+html:`<div class="s-nav" style="background:#0f766e;font-size:18px"><b>ลงทะเบียนรับวัคซีน</b><span class="sp"></span><span id="mn">A−</span><span id="pl">A+</span><span>🌐 TH/EN</span><span>🔊 อ่านออกเสียง</span></div>
+<div class="s-body" id="bd" style="font-size:18px"><h2>ขั้นตอนที่ 1 จาก 2: ข้อมูลผู้รับวัคซีน</h2>
+<label class="s-field" style="font-size:inherit">ชื่อ-นามสกุล <span style="color:#b91c1c">(จำเป็น)</span><input style="font-size:18px;padding:14px"></label>
+<label class="s-field" style="font-size:inherit">เบอร์โทรศัพท์ <span style="color:#b91c1c">(จำเป็น)</span><input inputmode="numeric" placeholder="เช่น 0812345678" style="font-size:18px;padding:14px"></label>
+<p class="s-muted">💡 ไม่สะดวกออนไลน์? โทร 1111 หรือลงทะเบียนที่ อสม. ใกล้บ้านได้</p><button class="s-btn" style="font-size:18px;padding:16px 32px">ถัดไป ›</button></div>`,
+init(r){let s=18;const bd=r.querySelector('#bd');r.querySelector('#pl').onclick=()=>{s=Math.min(28,s+2);bd.style.fontSize=s+'px'};r.querySelector('#mn').onclick=()=>{s=Math.max(14,s-2);bd.style.fontSize=s+'px'}},
+why:'ห้องนี้ปกติ: ตัวอักษรใหญ่และปรับขนาดได้ มีอ่านออกเสียงและเลือกภาษาได้ บอกช่องบังคับด้วยข้อความ (ไม่ใช้สีอย่างเดียว) ปุ่มใหญ่ บอกว่าอยู่ขั้นไหน และมีช่องทางอื่นให้คนที่ไม่สะดวกใช้ออนไลน์'},
+
+{site:'QuickPay',url:'quickpay.app/transfer',ans:[],
+html:`<div class="s-nav" style="background:#16a34a"><b>QuickPay</b></div><div class="s-body" id="b"><h2>โอนเงิน</h2><p>ผู้รับ: <b>นางสาวมานี มีสุข</b> (กสิกรไทย xxx-x-x1234-x)</p><p>จำนวน: <b>฿500.00</b></p><button class="s-btn green" style="padding:16px 30px;font-size:17px" id="t">โอนเงิน</button></div>`,
+init(r){const b=r.querySelector('#b');r.querySelector('#t').onclick=()=>{b.innerHTML='<h2>ยืนยันการโอน?</h2><div class="s-card">โอน <b>฿500.00</b> ให้ <b>นางสาวมานี มีสุข</b></div><br><div class="s-row" style="gap:20px"><button class="s-btn ghost" id="c" style="padding:16px 30px;font-size:17px">ยกเลิก</button><button class="s-btn green" id="y" style="padding:16px 30px;font-size:17px">ยืนยันโอน</button></div>';r.querySelector('#c').onclick=()=>{b.innerHTML='<div class="s-ok">ยกเลิกการโอนแล้ว ไม่มีการตัดเงิน</div>'};r.querySelector('#y').onclick=()=>{b.innerHTML='<div class="s-ok" style="font-size:17px">✓ โอนสำเร็จ ฿500.00<br>เลขอ้างอิง: QP20260512-8841<br><small>บันทึกสลิปลงเครื่องแล้ว</small></div>'}}},
+why:'ห้องนี้ปกติ: มีหน้ายืนยันก่อนโอน ปุ่มใหญ่และเว้นระยะห่าง ยกเลิกได้ และเมื่อเสร็จก็แสดงเลขอ้างอิงชัดเจน (ทนทานต่อความผิดพลาด + มี closure)'}
+];
+
+/* =================== LEVEL 4 : CHAOS =================== */
+const CHAOS={
+html:`<div class="ch">
+<div class="hs ch-mq mq-wrap" data-h="h10"><span class="mq">🔥🔥 FLASH SALE!!! ⚡ ลด 90% ⚡ ซื้อเลย!!! 💥 ด่วนที่สุด!!! 🎁 แจกฟรี!!! 🔥🔥 FLASH SALE!!! ⚡</span></div>
+<div class="hs ch-nav" data-h="h1"><span>Home</span><span>สินค้า</span><span>カート</span><span>♥ ตะกร้า</span><span>HELP ME</span><span class="ch-logo">MegaSh0p™ (โลโก้)</span></div>
+<div class="hs" data-h="h13" style="padding:8px 16px"><input disabled placeholder="🔍 ระบบค้นหาปิดใช้งาน — กรุณาเลื่อนหาสินค้า 3,000 รายการเอง" style="width:100%;padding:8px;font-family:inherit"></div>
+<div class="ch-main"><div>
+ <div style="font-size:90px;text-align:center;background:#fff;border:3px dotted red">🎧</div>
+ <h2 style="font-family:'Comic Sans MS',cursive;color:#ff00aa;margin:8px 0">หูฟังไร้สาย X-PRO MAX ULTRA</h2>
+ <div class="hs" data-h="h2" style="color:#e9e48a;font-size:11px;display:inline-block">ราคาพิเศษ ฿990 (ปกติ ฿2,990) โปรหมดเที่ยงคืนนี้ · รับประกัน 2 ปี</div>
+ <div class="hs" data-h="h14" style="margin:8px 0;display:inline-block">สถานะสต็อก: <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:red"></span> <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:green"></span> <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:orange"></span></div>
+ <div style="margin:10px 0"><button class="hs ch-b" data-h="h3">ใส่ตะกร้า</button><button class="hs ch-b" data-h="h4">ลบบัญชีถาวร</button></div>
+ <button class="hs" data-h="h9" style="background:#000;color:#0f0;font-family:monospace;border:0;padding:10px">EXECUTE POST /api/v2/order?commit=true</button>
+ <div class="hs" data-h="h12" style="margin-top:10px;background:#7c3aed;color:#fff;padding:12px;display:inline-block">✋ กดค้างไว้ 15 วินาทีเพื่อยืนยันการสั่งซื้อ (ปล่อย = เริ่มใหม่)</div>
+ <div class="hs" data-h="h17" style="margin-top:10px;background:#fff;padding:10px;border:1px solid #999">📦 คำสั่งซื้อล่าสุด: <i>— (ชำระเงินแล้วแต่ไม่มีข้อความยืนยันหรือเลขคำสั่งซื้อ)</i></div>
+ <div class="hs" data-h="h18" style="margin-top:10px;background:#fff;padding:10px;border:1px solid #999">🎟 กรอกรหัสส่วนลด 12 หลักที่เราส่ง SMS ให้เมื่อเดือนที่แล้ว: <input style="width:120px"></div>
+</div><div>
+ <div class="hs" data-h="h8" style="background:#fff;padding:8px;font-size:22px;letter-spacing:10px">⎈⌬⏣⍟⌘⎊</div>
+ <div class="hs ch-err" data-h="h6">⚠ ERR_0x80040154 NULL_REF @ cart.js:88</div>
+ <div class="hs" data-h="h7" style="background:#fde68a;padding:16px;position:relative;margin:8px 0">🧴 โฆษณา: ครีมกันแดด SPF100 <span style="position:absolute;top:1px;right:2px;font-size:7px">✕</span></div>
+ <div class="hs" data-h="h11" style="background:#fff;padding:8px;margin:8px 0">❓ ช่วยเหลือ → <span style="color:#999">“404 — หน้านี้ไม่มีอยู่จริง”</span></div>
+ <div class="hs" data-h="h15" style="background:#fff;padding:8px;margin:8px 0"><div style="font-family:'Courier New';font-size:26px;letter-spacing:8px;transform:skewX(-20deg);color:#aaa;text-decoration:line-through">x7Qp</div><small>ไม่มี CAPTCHA เสียง · ผู้พิการทางสายตาโปรดติดต่อสาขา</small></div>
+ <div class="hs" data-h="h16" style="background:#ef4444;color:#fff;padding:10px;margin:8px 0">⏳ คุณจะถูกพาไปหน้าโฆษณาใน <b id="chc">30</b> วินาที (ยกเลิกไม่ได้)</div>
+</div></div>
+<div class="hs ch-pop" data-h="h5"><b>📩 สมัครสมาชิกเดี๋ยวนี้!</b><br><small>ป๊อปอัปนี้ปิดไม่ได้</small><br><button>สมัคร</button> <button>สมัครเลย</button></div>
+</div>`,
+hs:{
+ h1:{ans:['N4','S1'],why:'เมนูใช้หลายภาษาปนกัน (Home/สินค้า/カート/HELP ME) ไอคอน ♥ ใช้แทนตะกร้า และโลโก้เล็กจางอยู่ปลายขวา ผิดทั้งมาตรฐานเว็บและความสม่ำเสมอ'},
+ h2:{ans:['U4'],why:'ข้อมูลราคาและเงื่อนไขสำคัญเป็นตัวเล็กสีจางบนพื้นเหลือง คอนทราสต์ต่ำจนแทบอ่านไม่ออก'},
+ h3:{ans:['S3','N1'],why:'ปุ่มใส่ตะกร้าไม่มี feedback และตัวเลขตะกร้าไม่เปลี่ยนเลย'},
+ h4:{ans:['N5','S5','U5'],why:'ปุ่ม “ลบบัญชีถาวร” หน้าตาเหมือนและวางติดกับปุ่มใส่ตะกร้า กดพลาดได้ง่ายมาก'},
+ h5:{ans:['N3','S7'],why:'ป๊อปอัปไม่มีปุ่มปิด มีแต่ตัวเลือกสมัคร ผู้ใช้ไม่มีทางออก'},
+ h6:{ans:['N9'],why:'ข้อความ error เป็นรหัสโปรแกรม ไม่บอกสาเหตุหรือวิธีแก้เป็นภาษาคน'},
+ h7:{ans:['U7','U6'],why:'ปุ่ม ✕ ปิดโฆษณาเล็กราว 7px กดให้โดนยากมาก โดยเฉพาะบนมือถือ'},
+ h8:{ans:['N6','S8'],why:'แถบเครื่องมือเป็นสัญลักษณ์แปลก ๆ ไม่มีป้ายชื่อหรือ tooltip ผู้ใช้ต้องเดาหรือจำเอาเอง'},
+ h9:{ans:['N2','U3'],why:'ปุ่มสั่งซื้อใช้ภาษาโปรแกรมเมอร์ (EXECUTE POST /api) แทนคำว่า “สั่งซื้อ”'},
+ h10:{ans:['N8'],why:'แบนเนอร์วิ่งสีฉูดฉาดแย่งความสนใจจากเนื้อหาหลัก ไม่จำเป็นต่องานของผู้ใช้'},
+ h11:{ans:['N10'],why:'ลิงก์ช่วยเหลือพาไปหน้า 404 ไม่มีเอกสารช่วยเหลือใช้ได้จริง'},
+ h12:{ans:['U6'],why:'ต้องกดค้าง 15 วินาที ปล่อยแล้วเริ่มใหม่ ใช้แรงกายมากเกินจำเป็น'},
+ h13:{ans:['N7','S2','U2'],why:'ปิดระบบค้นหาในเว็บที่มีสินค้า 3,000 รายการ ไม่มีตัวเร่งให้ผู้ใช้เลย'},
+ h14:{ans:['U4'],why:'บอกสถานะสต็อกด้วยสีอย่างเดียว ไม่มีข้อความ คนตาบอดสีอ่านไม่ออก'},
+ h15:{ans:['U1','U4'],why:'CAPTCHA เป็นภาพอย่างเดียว ไม่มีตัวเลือกเสียง ผู้พิการทางสายตาถูกกีดกัน และถูกส่งไปสาขาแทน'},
+ h16:{ans:['S7','N3'],why:'ระบบจะพาผู้ใช้ไปหน้าโฆษณาเองโดยยกเลิกไม่ได้ ผู้ใช้ไม่ได้เป็นคนควบคุม'},
+ h17:{ans:['S4','N1'],why:'ชำระเงินแล้วไม่มีข้อความยืนยันหรือเลขคำสั่งซื้อ งานไม่มีจุดจบที่ชัดเจน'},
+ h18:{ans:['S8','N6'],why:'บังคับให้ผู้ใช้จำหรือไปค้นรหัส 12 หลักจาก SMS เดือนที่แล้ว ทั้งที่ระบบควรผูกรหัสกับบัญชีให้อัตโนมัติ'}
+},
+init(r){let t=30;const c=r.querySelector('#chc');iset(()=>{t--;if(t<=0)t=30;c.textContent=t},1000)}
+};
+
+/* =================== LEVELS =================== */
+const LEVELS=[
+ {key:'S',no:'ด่าน 1',name:"Shneiderman’s Eight Golden Rules",desc:'กฎทอง 8 ข้อ: ความสม่ำเสมอ ทางลัด feedback การจบงาน กันพลาด ย้อนกลับ การควบคุม และความจำ',color:'#f59e0b',sc:SC_S},
+ {key:'N',no:'ด่าน 2',name:"Evaluation — Nielsen’s 10 Heuristics",desc:'ประเมินเว็บด้วย 10 ฮิวริสติก ตั้งแต่สถานะระบบไปจนถึงเอกสารช่วยเหลือ',color:'#38bdf8',sc:SC_N},
+ {key:'U',no:'ด่าน 3',name:'Universal Design (UD)',desc:'7 หลักการออกแบบเพื่อทุกคน: เท่าเทียม ยืดหยุ่น เข้าใจง่าย รับรู้ได้ ทนพลาด ใช้แรงน้อย ขนาดเหมาะ',color:'#a78bfa',sc:SC_U},
+ {key:'X',no:'ด่าน 4 (บอส)',name:'ห้องโกลาหล — เว็บที่แหกทุกกฎ',desc:'เว็บเดียวที่ผิดเกือบทุกกฎ! คลิกหาจุดผิดให้ครบ 18 จุด แล้วระบุหลักการ',color:'#ef4444',hunt:true}
+];
+$('#levelList').innerHTML=LEVELS.map((l,i)=>`<div class="lv" style="--c:${l.color}" onclick="startLevel(${i})"><div class="no">${l.no}</div><h3>${l.name}</h3><p>${l.desc}</p><span class="tag">${l.hunt?'18 จุดผิด · โหมดล่า':l.sc.length+' ห้อง'}</span></div>`).join('');
+
+/* =================== GAME STATE =================== */
+let state={};
+function updateHud(){
+ const L=LEVELS[state.lvl];
+ $('#hudLv').innerHTML=`<span style="color:${L.color}">${L.no}</span> · ${L.name}`;
+ $('#hudRoom').textContent=L.hunt?`พบแล้ว ${state.found.size} / ${Object.keys(CHAOS.hs).length}`:`ห้องที่ ${state.idx+1} / ${state.rooms.length}`;
+ $('#hudLives').textContent='❤️'.repeat(Math.max(0,state.lives))+'🖤'.repeat(Math.max(0,3-state.lives));
+ $('#hudScore').textContent='⭐ '+state.score;
+}
+function startLevel(i){
+ clearT();closeModal();
+ const L=LEVELS[i];
+ state={lvl:i,idx:0,lives:3,score:0,correct:0,missed:[],found:new Set()};
+ show('#game');
+ if(L.hunt){$('#ctrlRoom').style.display='none';$('#ctrlHunt').style.display='flex';startHunt();}
+ else{$('#ctrlRoom').style.display='flex';$('#ctrlHunt').style.display='none';state.rooms=shuffle(L.sc);renderRoom();}
+}
+function intro(text,sub){const e=$('#roomIntro');e.innerHTML=text+(sub?'<small>'+sub+'</small>':'');e.classList.add('show');setTimeout(()=>e.classList.remove('show'),750)}
+function renderRoom(){
+ clearT();document.querySelectorAll('.site').forEach(s=>s.style.cursor='');
+ const sc=state.rooms[state.idx];
+ intro('ห้องที่ '+(state.idx+1),'สังเกตให้ดี… มีอะไรผิดปกติหรือไม่');
+ setTimeout(()=>{
+  $('#url').textContent='🔒 https://'+sc.url;
+  const vp=$('#viewport');vp.scrollTop=0;
+  vp.innerHTML='<div class="site">'+sc.html+'</div>';
+  const site=vp.querySelector('.site');
+  if(sc.init)sc.init(site);
+  $('#browser').classList.remove('flick');void $('#browser').offsetWidth;$('#browser').classList.add('flick');
+  updateHud();
+ },350);
+}
+function answer(id){
+ clearT();
+ const sc=state.rooms[state.idx];
+ const ok=id===null?sc.ans.length===0:sc.ans.includes(id);
+ if(ok){state.score+=100;state.correct++}else{state.lives--;state.missed.push({sc,id})}
+ updateHud();
+ let h=`<div class="res ${ok?'ok':'bad'}"><div class="res-ic">${ok?'✔':'✖'}</div><h2>${ok?'ถูกต้อง!':'ผิดพลาด! เสีย 1 ชีวิต'}</h2>`;
+ h+=id?`<p>คุณรายงาน: ${tag(id)}</p>`:`<p>คุณเลือก: <b>ไม่พบความผิดปกติ</b></p>`;
+ if(!sc.ans.length)h+=`<p>✅ ห้องนี้ <b>ปกติ</b> ไม่มีความผิดปกติ</p>`;
+ else{h+=`<p>ความผิดปกติหลัก: ${tag(sc.ans[0])}</p>`;if(sc.ans.length>1)h+=`<p class="muted">ตอบข้อเหล่านี้ก็นับว่าถูก: ${sc.ans.slice(1).map(tag).join(' ')}</p>`}
+ h+=`<div class="why">💡 ${sc.why}</div>`;
+ const end=state.lives<=0||state.idx>=state.rooms.length-1;
+ h+=`<button class="g-btn" onclick="nextRoom()">${state.lives<=0?'ดูผลลัพธ์':end?'ดูสรุปด่าน':'เดินไปห้องถัดไป →'}</button></div>`;
+ openModal(h);
+}
+function nextRoom(){closeModal();if(state.lives<=0||state.idx>=state.rooms.length-1){summary();return}state.idx++;renderRoom()}
+
+/* ===== bucket report ===== */
+let REPORT_CB=null;
+function openReport(cb,title){
+ REPORT_CB=cb;
+ let h=`<h2>⚠ รายงานความผิดปกติ</h2><p class="muted">${title||'เลือก “ถัง” ของกลุ่มหลักการ แล้วเลือกข้อที่ถูกละเมิด'}</p><div class="buckets">`;
+ for(const k of ['S','N','U']){const g=RULES[k];h+=`<div class="bucket" data-k="${k}" style="--c:${g.color}" onclick="pickBucket('${k}')"><div class="bk-icon">🪣</div><div class="bk-name">${g.short}</div><div class="bk-count">${g.items.length} ข้อ · แตะเพื่อเทออก</div></div>`}
+ h+=`</div><div id="bkItems"><p class="muted center">👆 แตะถังเพื่อเทข้อทั้งหมดของกลุ่มนั้นออกมา</p></div><div class="center" style="margin-top:16px"><button class="g-btn ghost" onclick="closeModal()">ยกเลิก กลับไปดูหน้าเว็บ</button></div>`;
+ openModal(h);
+}
+function pickBucket(k){
+ document.querySelectorAll('.bucket').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));
+ const g=RULES[k];
+ $('#bkItems').innerHTML=`<h3 style="color:${g.color};margin:6px 0 12px">${g.name}</h3><div class="chips">`+g.items.map((r,i)=>`<button class="chip" style="--c:${g.color};animation-delay:${i*45}ms" onclick="chooseRule('${r.id}')"><b>${r.id}</b>${r.th}<small>${r.en}</small><em>${r.d}</em></button>`).join('')+'</div>';
+}
+function chooseRule(id){closeModal();if(REPORT_CB)REPORT_CB(id)}
+
+/* ===== hunt mode ===== */
+function startHunt(){
+ clearT();
+ intro('ห้องโกลาหล','เว็บนี้แหกทุกกฎ… หาให้ครบ 18 จุด');
+ setTimeout(()=>{
+  $('#url').textContent='⚠ http://megash0p-super-deal.biz/index_final_FINAL2.html';
+  const vp=$('#viewport');vp.scrollTop=0;vp.innerHTML='<div class="site">'+CHAOS.html+'</div>';
+  const site=vp.querySelector('.site');CHAOS.init(site);
+  site.addEventListener('click',e=>{
+   const hs=e.target.closest('.hs');
+   if(!hs){sToast('🔎 ตรงนี้ยังไม่พบความผิดปกติ');return}
+   e.preventDefault();
+   const hid=hs.dataset.h;if(state.found.has(hid)||state.revealed)return;
+   const spec=CHAOS.hs[hid];
+   openReport(id=>{
+    if(spec.ans.includes(id)){
+     state.found.add(hid);state.score+=100;state.correct++;
+     hs.classList.add('found');hs.insertAdjacentHTML('beforeend',`<span class="hs-badge">✓ ${spec.ans[0]}</span>`);updateHud();
+     const done=state.found.size===Object.keys(CHAOS.hs).length;
+     openModal(`<div class="res ok"><div class="res-ic">✔</div><h2>ถูกต้อง!</h2><p>${tag(spec.ans[0])} ${spec.ans.slice(1).map(tag).join(' ')}</p><div class="why">💡 ${spec.why}</div><button class="g-btn" onclick="${done?'summary()':'closeModal()'}">${done?'🏆 ครบทุกจุด! ดูสรุป':'ล่าต่อ →'}</button></div>`);
+    }else{
+     state.lives--;updateHud();
+     openModal(`<div class="res bad"><div class="res-ic">✖</div><h2>ยังไม่ใช่!</h2><p>จุดนี้ผิดปกติจริง แต่ไม่ได้ละเมิด ${tag(id)}</p><p class="muted">เสีย 1 ชีวิต — ลองคิดอีกทีว่าจุดนี้ทำให้ผู้ใช้ลำบากเพราะอะไร</p><button class="g-btn" onclick="${state.lives<=0?'revealHunt()':'closeModal()'}">${state.lives<=0?'หมดชีวิต — ดูเฉลย':'ลองใหม่'}</button></div>`);
+    }
+   },'🎯 คุณพบจุดน่าสงสัย! จุดนี้ละเมิดหลักการข้อใด?');
+  });
+  updateHud();
+ },350);
+}
+function revealHunt(){
+ closeModal();state.revealed=true;
+ document.querySelectorAll('.ch .hs').forEach(hs=>{const id=hs.dataset.h;if(!state.found.has(id)){hs.classList.add('reveal');hs.insertAdjacentHTML('beforeend',`<span class="hs-badge">${CHAOS.hs[id].ans[0]}</span>`)}});
+ summary();
+}
+
+/* ===== summary ===== */
+function summary(){
+ clearT();closeModal();
+ const L=LEVELS[state.lvl];
+ let total,missHtml='';
+ if(L.hunt){
+  total=Object.keys(CHAOS.hs).length;
+  const miss=Object.keys(CHAOS.hs).filter(k=>!state.found.has(k));
+  if(miss.length)missHtml='<h3>จุดที่ยังหาไม่เจอ</h3><div class="misslist">'+miss.map(k=>`<div class="why">${CHAOS.hs[k].ans.map(tag).join(' ')}<br>${CHAOS.hs[k].why}</div>`).join('')+'</div>';
+ }else{
+  total=state.rooms.length;
+  if(state.missed.length)missHtml='<h3>ห้องที่ตอบผิด — ทบทวน</h3><div class="misslist">'+state.missed.map(m=>`<div class="why"><b>${m.sc.site}</b> · คำตอบ: ${m.sc.ans.length?m.sc.ans.map(tag).join(' '):'<b>ห้องปกติ</b>'}<br>${m.sc.why}</div>`).join('')+'</div>';
+ }
+ const pct=Math.round(state.correct/total*100);
+ const rank=pct>=90?'🏆 UX Inspector ระดับตำนาน':pct>=70?'🥈 นักตรวจการณ์ฝีมือดี':pct>=40?'🥉 นักตรวจการณ์ฝึกหัด':'👻 ติดอยู่ในห้องวนลูป…';
+ const nxt=state.lvl<LEVELS.length-1?`<button class="g-btn" onclick="startLevel(${state.lvl+1})">ด่านถัดไป →</button>`:'';
+ $('#sumBox').innerHTML=`<h1 class="glitch" style="font-size:40px">${state.lives<=0?'GAME OVER':'LEVEL CLEAR'}</h1><div class="sumcard">
+ <div class="center muted">${L.no} · ${L.name}</div><div class="bigscore">${state.score}</div>
+ <div class="center">ถูก ${state.correct} / ${total} (${pct}%) · ${rank}</div>
+ <div class="controls"><button class="g-btn ghost" onclick="startLevel(${state.lvl})">↻ เล่นด่านนี้ใหม่</button>${nxt}<button class="g-btn ghost" onclick="goMenu()">🏠 เมนูหลัก</button>${L.hunt?'<button class="g-btn ghost" onclick="show(\'#game\')">👀 ดูหน้าเว็บที่เฉลยแล้ว</button>':''}</div>${missHtml}</div>`;
+ show('#summary');
+}
+function goMenu(){clearT();closeModal();show('#menu')}
+
+/* ===== handbook ===== */
+function openHandbook(){
+ let h='<h2>📖 คู่มือหลักการ</h2>';
+ for(const k of ['S','N','U']){const g=RULES[k];h+=`<div class="hb-group" style="--c:${g.color}"><h3 style="color:${g.color}">🪣 ${g.name}</h3>`+g.items.map(r=>`<div class="hb-item"><b>${r.id} ${r.th}</b> — <i class="muted">${r.en}</i><br>${r.d}</div>`).join('')+'</div>'}
+ h+='<div class="center"><button class="g-btn" onclick="closeModal()">ปิด</button></div>';
+ openModal(h);
+}
+</script>
+</body>
+</html>
